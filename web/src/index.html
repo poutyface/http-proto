@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <meta http-equiv="Content-Type" content="text/html; carset=UTF-8" />
+        <title>message</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+        <script src="main.js" type="module"></script>
+</head>
+<body>
+  <div id="ws">init</div>
+  <div>
+    <div>
+      <input id="ws-send-button-1" type="button" value="type1: tx:json, rx:json" />
+    </div>
+    <div id="type1-res"></div>
+  </div>
+  <div>
+    <div>
+      <input id="ws-send-button-2" type="button" value="type2: tx:json, rx:proto" />
+      </div>
+      <div id="type2-res"></div>
+  </div>
+  <div>
+    <input id="ws-send-button-3" type="button" value="RequestImage: tx:json, rx:proto" />
+  </div>
+  <div>
+    <input id="ws-send-button-4" type="button" value="RequestImage: seq tx:json, rx:proto" />
+    <input id="ws-send-button-5" type="button" value="Reset" />  
+    <input id="ws-send-button-6" type="button" value="Step" />  
+    <input id="ws-send-button-7" type="button" value="Back" />  
+  </div>
+  <div>
+    <img id="image-1" border=1 width="640" height="320" ></img>
+  </div>
+</body>
+</html>

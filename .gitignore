@@ -1,0 +1,12 @@
+/target
+/proto/src/*.rs
+/web/dist
+/web/node_modules
+.DS_Store
+package-lock.json
+Cargo.lock
+/web/src/proto_bundle.json
+
+
+
+
