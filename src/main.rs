@@ -85,7 +85,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketHandler 
                             let img = img.resize(target_width, target_height, image::imageops::FilterType::Nearest);
 
                             let mut bytes: Vec<u8> = Vec::new();
-                            img.write_to(&mut bytes, image::ImageFormat::Jpeg).unwrap();
+                            img.write_to(&mut bytes, image::ImageOutputFormat::Jpeg(50)).unwrap();
                             
                             let mut image_update = proto::image_update::ImageUpdate::new();
                             image_update.set_image(bytes);
