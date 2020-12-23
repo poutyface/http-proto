@@ -1,9 +1,8 @@
-let protobuf = require('protobufjs');
 import { WebsocketEndpoint } from './websocket_endpoint.js';
-
-
-let protoBundle = require("./proto_bundle.json");
-let protoRoot = protobuf.Root.fromJSON(protoBundle);
+import Worker from './image_canvas.worker.js';
+const protobuf = require('protobufjs/light');
+const protoBundle = require("./proto_bundle.json");
+const protoRoot = protobuf.Root.fromJSON(protoBundle);
 
 
 let ws = new WebsocketEndpoint("ws://127.0.0.1:8080/ws");
@@ -15,11 +14,11 @@ ws.on('type1', (data) => {
 });
 
 ws.onBinary((data) => {
-    let Status = protoRoot.lookupType("Status");
-    let message = Status.decode(new Uint8Array(data));
-    let obj = Status.toObject(message, {enums: String});
-    document.getElementById("type2-res").innerHTML = message;
-    console.log(obj.type)
+    let Inbox = protoRoot.lookupType("Inbox");
+    let inbox = Inbox.decode(new Uint8Array(data));
+    let obj = Inbox.toObject(inbox, {enums: String});
+    document.getElementById("inbox-type").innerHTML = inbox.Blob;
+    document.getElementById("type2-res").innerHTML = JSON.stringify(obj);
 });
 
 document.getElementById("ws-send-button-1").addEventListener('click', () => {
@@ -28,27 +27,72 @@ document.getElementById("ws-send-button-1").addEventListener('click', () => {
 document.getElementById("ws-send-button-2").addEventListener('click', () => {
     ws.sendData("type2", {});
 });
-
-
-// Handle image 
-let wsImage = new WebsocketEndpoint("ws://127.0.0.1:8080/ws");
-wsImage.init();
-wsImage.onBinary((data) => {
-
-    let imageUpdate = protoRoot.lookupType("ImageUpdate");
-    let message = imageUpdate.decode(new Uint8Array(data));
-    let obj = imageUpdate.toObject(message, {enums: String});
-    console.log("recieve image");
-    // encode base64, and set image src
-    let image = `data:image/jpeg;base64,${btoa(String.fromCharCode.apply(null,obj.image))}`;
-    let imageTag = document.getElementById("image-1");
-    imageTag.src = image;
-
-});
-
 document.getElementById("ws-send-button-3").addEventListener('click', () => {
-    wsImage.sendData("RequestImage", {resource: "test_images", frame_id: 1, scale_x: 0.5, scale_y: 0.5});
+    ws.sendData("type3", {});
 });
+
+
+class RemoteImageDataProvider {
+    constructor(address, resource){
+        this.address = address;
+        this.resource = resource;
+        this.ws = new WebsocketEndpoint(this.address);
+        this.ws.init();
+    }
+
+    on(func){
+        this.ws.onBinary(func);
+    }
+
+    getMessage(message, frameId){
+        this.ws.sendData(message, {resource: this.resource, frame_id: frameId, scale_x: 0.5, scale_y: 0.5});
+    }
+}
+
+class ImageCanvas {
+    constructor(htmlCanvas, dataProvider) {
+        this.htmlCanvas = htmlCanvas;
+        this.dataProvider = dataProvider;
+
+        this.worker = new Worker();
+        let offscreen = htmlCanvas.transferControlToOffscreen();
+        this.worker.postMessage({type: "initialize", canvas: offscreen}, [offscreen]);
+
+        this.dataProvider.on((data) => {
+            this.worker.postMessage({type: "renderImage", data: data});
+        });
+    }
+
+    requestImage(frameId){
+        this.dataProvider.getMessage("RequestImage", frameId);
+    }
+
+    requestStreamImage(frameId){
+        this.dataProvider.getMessage("RequestStreamImage", frameId);
+    }
+
+}
+
+let remoteDataProvider = new RemoteImageDataProvider("ws://127.0.0.1:8080/ws", "test_images");
+let imageCanvas1 = new ImageCanvas(document.getElementById("canvas-1"), remoteDataProvider);
+
+document.getElementById("image-stream").addEventListener('click', () => {
+    imageCanvas1.requestStreamImage(1);
+});
+
+
+/*
+imageWorker.onmessage = (event) => {
+    let image = new Image();
+    image.src = `data:image/jpeg;base64,${event.data.image}`;
+    image.decode().then(() => {
+        htmlCanvas.width = image.width;
+        htmlCanvas.height = image.height;
+        htmlCanvas.getContext("2d").drawImage(image, 0, 0);
+    });
+};
+*/
+
 
 class SequenceNumberUpdater {
     constructor(startNumber, priodMs, callbackFn){
@@ -80,12 +124,12 @@ class SequenceNumberUpdater {
     }
 }
 
-let seqTimer = new SequenceNumberUpdater(1, 100, (n) => {
+let seqTimer = new SequenceNumberUpdater(1, 33, (n) => {
     console.log(n);
-    wsImage.sendData("RequestImage", {resource: "test_images", frame_id: n, scale_x: 0.5, scale_y: 0.5});
+    imageCanvas1.requestImage(n);
 });
 
-document.getElementById("ws-send-button-4").addEventListener('click', () => {
+document.getElementById("image-play").addEventListener('click', () => {
     if(seqTimer.isStarted == false){
         seqTimer.start();
     }
@@ -93,28 +137,14 @@ document.getElementById("ws-send-button-4").addEventListener('click', () => {
         seqTimer.stop();
     }
 });
-document.getElementById("ws-send-button-5").addEventListener('click', () => {
+document.getElementById("image-reset").addEventListener('click', () => {
     seqTimer.reset();
 });
-document.getElementById("ws-send-button-6").addEventListener('click', () => {
+document.getElementById("image-step").addEventListener('click', () => {
     seqTimer.currentNumber += 1;
-    wsImage.sendData("RequestImage", {resource: "test_images", frame_id: seqTimer.currentNumber, scale_x: 0.5, scale_y: 0.5});
+    imageCanvas1.requestImage(seqTimer.currentNumber);
 });
-document.getElementById("ws-send-button-7").addEventListener('click', () => {
+document.getElementById("image-back").addEventListener('click', () => {
     seqTimer.currentNumber -= 1;
-    wsImage.sendData("RequestImage", {resource: "test_images", frame_id: seqTimer.currentNumber, scale_x: 0.5, scale_y: 0.5});
+    imageCanvas1.requestImage(seqTimer.currentNumber);
 });
-
-
-
-
-
-
-
-
-/*
-socket.onopen = function() {
-    document.getElementById("ws").innerHTML = "connect";
-};
-*/
-    

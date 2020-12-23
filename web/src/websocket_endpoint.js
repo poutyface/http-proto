@@ -25,7 +25,6 @@ export class WebsocketEndpoint {
 
         this.websocket.onmessage = (event) => {
             if (event && event.data){
-                console.log(event.data);
                 if (typeof event.data === 'string'){
                     let data = JSON.parse(event.data);
                     let messageType = data['type'];

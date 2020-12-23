@@ -3,3 +3,16 @@ syntax = "proto3";
 message Status {
     string type = 1;
 }
+
+message Position {
+    int64 x = 1;
+    int64 y = 2;
+}
+
+
+message Inbox {
+    oneof Blob {
+        Status status = 1;
+        Position position = 2;
+    }
+}

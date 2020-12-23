@@ -6,6 +6,7 @@
 package-lock.json
 Cargo.lock
 /web/src/proto_bundle.json
+/backend/assets
 
 
 

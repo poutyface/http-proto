@@ -16,21 +16,23 @@
   </div>
   <div>
     <div>
-      <input id="ws-send-button-2" type="button" value="type2: tx:json, rx:proto" />
-      </div>
-      <div id="type2-res"></div>
+      <input id="ws-send-button-2" type="button" value="type2: position tx:json, rx:proto" />
+    </div>
+    <div>
+      <input id="ws-send-button-3" type="button" value="type3: status tx:json, rx:proto" />
+    </div>
+    <div id="inbox-type"></div>
+    <div id="type2-res"></div>
   </div>
   <div>
-    <input id="ws-send-button-3" type="button" value="RequestImage: tx:json, rx:proto" />
+    <input id="image-play" type="button" value="Play: tx:json, rx:proto" />
+    <input id="image-reset" type="button" value="Reset" />  
+    <input id="image-step" type="button" value="Step" />  
+    <input id="image-back" type="button" value="Back" />
+    <input id="image-stream" type="button" value="Stream: pull images" />
   </div>
   <div>
-    <input id="ws-send-button-4" type="button" value="RequestImage: seq tx:json, rx:proto" />
-    <input id="ws-send-button-5" type="button" value="Reset" />  
-    <input id="ws-send-button-6" type="button" value="Step" />  
-    <input id="ws-send-button-7" type="button" value="Back" />  
-  </div>
-  <div>
-    <img id="image-1" border=1 width="640" height="320" ></img>
+    <canvas id="canvas-1"></canvas>
   </div>
 </body>
 </html>
