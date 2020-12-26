@@ -19,6 +19,9 @@ ws.onBinary((data) => {
     let obj = Inbox.toObject(inbox, {enums: String});
     document.getElementById("inbox-type").innerHTML = inbox.Blob;
     document.getElementById("type2-res").innerHTML = JSON.stringify(obj);
+    let textarea = document.getElementById("text-1");
+    textarea.value += JSON.stringify(obj) + '\n';
+    textarea.scrollTop = textarea.scrollHeight;
 });
 
 document.getElementById("ws-send-button-1").addEventListener('click', () => {
