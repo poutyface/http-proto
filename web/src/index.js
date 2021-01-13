@@ -1,9 +1,10 @@
 import { WebsocketEndpoint } from './websocket_endpoint.js';
 import Worker from './image_canvas.worker.js';
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+
+import Chart from 'chart.js';
 
 const protobuf = require('protobufjs/light');
 const protoBundle = require("./proto_bundle.json");
@@ -86,12 +87,16 @@ class RemoteImageDataProvider {
         });
     }
     
-    getMessage(message, frameId){
+    getMessage(message, frameId=-1){
         if(message === 'Image' && frameId in this.cacheStore){
             console.log(frameId);
             this.func(this.cacheStore[frameId]);
         } else {
-            this.ws.sendData(message, {resource: this.resource, frame_id: frameId, scale_x: 0.5, scale_y: 0.5});
+            if(frameId === -1){
+                this.ws.sendData(message, {});
+            } else{
+                this.ws.sendData(message, {resource: this.resource, frame_id: frameId, scale_x: 0.5, scale_y: 0.5});
+            }
         }
     }
 }
@@ -152,7 +157,7 @@ class PlaybackController {
     
     stopStream(){
         this.isStreaming = false;
-        this.dataProvider.getMessage("StopStreamImage", this.playback.next());
+        this.dataProvider.getMessage("StopStreamImage");
     }
 
     _animate(){
@@ -193,6 +198,7 @@ class PlaybackController {
 
 function ImagePlaybackControll(props) {
     const [isStreaming, setIsStreaming] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
     const canvasEl = useRef(null);
     const worker = useRef(null);
     const ctrl = useRef(props.playbackCtrl);
@@ -214,7 +220,9 @@ function ImagePlaybackControll(props) {
     {isStreaming
         ? <button onClick={() => {ctrl.current.stopStream(); setIsStreaming(false)}}>stop</button>
         : <button onClick={() => {ctrl.current.startStream(); setIsStreaming(true)}}>stream</button>}
-    <button onClick={() => ctrl.current.play()}>play</button>
+    {isPlaying
+        ? <button onClick={() => {ctrl.current.play(); setIsPlaying(false)}}>stop</button>
+        : <button onClick={() => {ctrl.current.play(); setIsPlaying(true)}}>play</button>}        
     <button onClick={() => ctrl.current.seek(1)}>reset</button>
     <button onClick={() => ctrl.current.step()}>step</button>
     <button onClick={() => ctrl.current.back()}>back</button>
@@ -224,12 +232,96 @@ function ImagePlaybackControll(props) {
 
 }
 
+function LineChart(props) {
+    const canvasEl = useRef(null);
+    const ctx = useRef(null);
+    const chart = useRef(null);
+    const ws = useRef(null);
+    const timestamp = useRef(0);
+
+    useEffect(() => {
+        ws.current = new WebsocketEndpoint("ws://127.0.0.1:8080/ws");
+        ws.current.init();
+        ws.current.on(props.data, (data) => {
+            console.log(data);
+            update(data.data.x, data.data.y);
+            //setResType1(JSON.stringify(data));
+            //chart.current.
+        });
+
+        ctx.current = canvasEl.current.getContext('2d');
+        chart.current = new Chart(ctx.current, {
+            type: 'line',
+            data: {
+                labels: [1,2,3,4,5],
+                datasets: [{
+                    data: [
+                        1,2,4,8,10,
+                    ],
+                    cubicInterpolationMode: 'monotone',
+                    lineTension: 0,
+                }]
+            },
+            options: {
+                title: {display: true, text: props.data},
+                responsive: true,
+                animation: false,
+                legend: {
+                    display: false,
+                },
+                scales: {
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: props.y,
+                        }
+                    }],
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: props.x,
+                        }                        
+                    }],
+                },
+            }
+        });
+    }, []);
+
+    const update = (x, y) => {
+        if(chart.current.data.labels.length > 20){
+            chart.current.data.labels.shift();
+            chart.current.data.datasets[0].data.shift();
+        }
+        chart.current.data.labels.push(x);
+        chart.current.data.datasets[0].data.push(y);
+
+        chart.current.update();
+    };
+
+    const fetchData = () => {
+        ws.current.sendData(props.data, {timestamp: timestamp.current});
+        timestamp.current += 1;
+    };
+
+    return (
+        <>
+        <div style={{position: 'relative', height:400, width:700}}>
+            <canvas ref={canvasEl}></canvas>
+        </div>
+        <button onClick={() => fetchData()}>fetch</button>
+        </>
+    );
+}
+
 function App() {
     const playbackCtrl = useRef(new PlaybackController());
 
     return (
         <div>
         <LoadState />
+        <LineChart x={"timestamp"} y={"points"} data={"chart-1"}/>
         <RequestType1 />
         <ImagePlaybackControll playbackCtrl={playbackCtrl.current} />
         </div>
@@ -240,52 +332,3 @@ ReactDOM.render(
   <App />,
   document.getElementById("root")  
 );
-
-
-
-/*
-imageWorker.onmessage = (event) => {
-    let image = new Image();
-    image.src = `data:image/jpeg;base64,${event.data.image}`;
-    image.decode().then(() => {
-        htmlCanvas.width = image.width;
-        htmlCanvas.height = image.height;
-        htmlCanvas.getContext("2d").drawImage(image, 0, 0);
-    });
-};
-*/
-
-/*
-class SequenceNumberUpdater {
-    constructor(startNumber, priodMs, callbackFn){
-        this.priodMs = priodMs;
-        this.startNumber = startNumber;
-        this.currentNumber = this.startNumber;
-        this.timer = null;
-        this.callbackFn = callbackFn;
-        this.isStarted = false;
-    }
-
-    start(){
-        this.timer = setInterval(() => {
-            this.callbackFn(this.currentNumber);
-            this.currentNumber += 1;
-        }, this.priodMs);
-        this.isStarted = true;
-    }
-    
-    stop(){
-        clearInterval(this.timer);
-        this.isStarted = false;
-    }
-
-    reset(){
-        clearInterval(this.timer);
-        this.isStarted = false;
-        this.currentNumber = this.startNumber;
-    }
-}
-
-
-*/
-

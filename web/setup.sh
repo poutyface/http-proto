@@ -16,3 +16,7 @@ npm i -D @babel/core babel-loader @babel/preset-env @babel/preset-react @babel/r
 
 # React
 npm i -D react react-dom
+
+# chart
+npm i -D chart.js
+

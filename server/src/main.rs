@@ -85,7 +85,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketHandler 
                         ctx.text(message.to_string())
                     }
                     "chart-1" => {
-
+                        let timestamp: u64 = v["data"]["timestamp"].as_u64().unwrap_or(0);
+                        let message = json!({
+                            "type": "chart-1",
+                            "data": {"x": timestamp, "y": timestamp as f64 + 1.5},
+                        });
+                        ctx.text(message.to_string())
                     }
                     "type2" => {
                         let mut inbox = proto::message::Inbox::new();
