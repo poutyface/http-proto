@@ -9,7 +9,6 @@ message Position {
     int64 y = 2;
 }
 
-
 message Inbox {
     oneof Blob {
         Status status = 1;

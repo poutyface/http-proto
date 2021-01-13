@@ -7,33 +7,6 @@
         <script src="main.js" type="module"></script>
 </head>
 <body>
-  <div id="ws">init</div>
-  <div>
-    <div>
-      <input id="ws-send-button-1" type="button" class="btn btn-dark" value="type1: tx:json, rx:json" />
-    </div>
-    <div id="type1-res"></div>
-  </div>
-  <div>
-    <div>
-      <input id="ws-send-button-2" type="button" class="btn btn-dark" value="type2: position tx:json, rx:proto" />
-    </div>
-    <div>
-      <input id="ws-send-button-3" type="button" class="btn btn-dark" value="type3: status tx:json, rx:proto" />
-    </div>
-    <div id="inbox-type"></div>
-    <div id="type2-res"></div>
-    <textarea id="text-1" cols="80" rows="5"></textarea>
-  </div>
-  <div>
-    <input id="image-play" type="button" class="btn btn-dark" value="Play: tx:json, rx:proto" />
-    <input id="image-reset" type="button" class="btn btn-dark" value="Reset" />  
-    <input id="image-step" type="button" class="btn btn-dark" value="Step" />  
-    <input id="image-back" type="button" class="btn btn-dark" value="Back" />
-    <input id="image-stream" type="button" class="btn btn-dark" value="Stream: pull images" />
-  </div>
-  <div>
-    <canvas id="canvas-1"></canvas>
-  </div>
+  <div id="root"></div>
 </body>
 </html>
