@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "image_update.proto";
+
 message Status {
     string type = 1;
 }
@@ -10,8 +12,10 @@ message Position {
 }
 
 message Inbox {
+    string type = 1;
     oneof Blob {
-        Status status = 1;
-        Position position = 2;
+        Status status = 2;
+        Position position = 3;
+        ImageUpdate imageUpdate = 4;
     }
 }

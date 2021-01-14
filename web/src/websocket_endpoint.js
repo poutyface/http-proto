@@ -1,3 +1,9 @@
+const protobuf = require('protobufjs/light');
+const protoBundle = require("./proto_bundle.json");
+const protoRoot = protobuf.Root.fromJSON(protoBundle);
+const Inbox = protoRoot.lookupType("Inbox");
+
+
 export class WebsocketEndpoint {
     constructor(serverAddress) {
         this.serverAddress = serverAddress;
@@ -5,7 +11,7 @@ export class WebsocketEndpoint {
         this.eventHandlers = {};
         this.eventHandlerOnBinary = null;
     }
-
+    
     init(){
         try {
             this.websocket = new WebSocket(this.serverAddress);
@@ -14,34 +20,37 @@ export class WebsocketEndpoint {
             console.error(`Failed to establish: ${error}`);
             return;
         }
-
+        
         this.websocket.onopen = () => {
-
+            
         };
-
+        
         this.websocket.onerror = (error) => {
-
+            
         };
 
         this.websocket.onmessage = (event) => {
             if (event && event.data){
                 if (typeof event.data === 'string'){
-                    let data = JSON.parse(event.data);
-                    let messageType = data['type'];
+                    const data = JSON.parse(event.data);
+                    const messageType = data['type'];
                     if(this.eventHandlers[messageType]){
                         this.eventHandlers[messageType](data);
                     }
                 } else {
-                    if(this.eventHanderOnBinary){
-                        this.eventHanderOnBinary(event.data);
+                    const inbox = Inbox.decode(new Uint8Array(event.data));
+                    const messageType = inbox.type;
+                    if(this.eventHandlers[messageType]){
+                        this.eventHandlers[messageType](inbox);
                     }
+                    
                 }
             }
         };
     }
 
-    on(eventName, fn) {
-        this.eventHandlers[eventName] = fn;
+    on(eventName, callback) {
+        this.eventHandlers[eventName] = callback;
     }
 
     onBinary(fn){

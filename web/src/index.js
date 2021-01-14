@@ -31,12 +31,18 @@ function RequestType1() {
         ws.current.on('type1', (data) => {
             setResType1(JSON.stringify(data));
         });
-        ws.current.onBinary((data) => {
-            const Inbox = protoRoot.lookupType("Inbox");
-            const inbox = Inbox.decode(new Uint8Array(data));
-            const obj = Inbox.toObject(inbox, {enums: String});
-            setResType2(JSON.stringify(obj));
-            accTextValue.current += JSON.stringify(obj) + '\n';
+        ws.current.on('Position', (data) => {
+            setResType2(JSON.stringify(data));
+            accTextValue.current += JSON.stringify(data) + '\n';
+            const textLength = accTextValue.current.length; 
+            if(textLength > 1000){
+                accTextValue.current = accTextValue.current.substring(textLength-1000);
+            }
+            setTextValue(accTextValue.current);
+        });
+        ws.current.on('Status', (data) => {
+            setResType2(JSON.stringify(data));
+            accTextValue.current += JSON.stringify(data) + '\n';
             const textLength = accTextValue.current.length; 
             if(textLength > 1000){
                 accTextValue.current = accTextValue.current.substring(textLength-1000);
@@ -59,8 +65,8 @@ function RequestType1() {
         <div>
         <button onClick={() => request("type1")}>Type1: Tx:JSON, Rx:JSON</button>
         <p>{resType1}</p>
-        <button onClick={() => request("type2")}>Type2: position Tx:JSON, Rx:Proto</button>
-        <button onClick={() => request("type3")}>Type3: status Tx:JSON, Rx:Proto</button>
+        <button onClick={() => request("Position")}>Type2: position Tx:JSON, Rx:Proto</button>
+        <button onClick={() => request("Status")}>Type3: status Tx:JSON, Rx:Proto</button>
         <p>{resType2}</p>
         <textarea ref={textAreaEl} defaultValue={textValue} cols="80" rows="5"></textarea>
         </div>
@@ -80,10 +86,10 @@ class RemoteImageDataProvider {
     
     on(func){
         this.func = func;
-        this.ws.onBinary((data) => {
-            const message = imageUpdate.decode(new Uint8Array(data));
-            this.cacheStore[message.timestamp] = message;        
-            this.func(message);
+        this.ws.on('Image', (data) => {
+            console.log(data.imageUpdate.timestamp);
+            this.cacheStore[data.imageUpdate.timestamp] = data.imageUpdate;
+            this.func(data.imageUpdate);
         });
     }
     

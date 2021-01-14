@@ -92,8 +92,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketHandler 
                         });
                         ctx.text(message.to_string())
                     }
-                    "type2" => {
+                    "Position" => {
                         let mut inbox = proto::message::Inbox::new();
+                        inbox.set_field_type("Position".to_string());
 
                         let mut position = proto::message::Position::new();
                         position.set_x(32);
@@ -105,9 +106,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketHandler 
                             ctx.binary(msg);
                         }
                     }
-                    "type3" => {
+                    "Status" => {
                         let mut inbox = proto::message::Inbox::new();
-
+                        inbox.set_field_type("Status".to_string());
                         let mut status = proto::message::Status::new();
                         status.set_field_type("hello there!".to_string());
                         inbox.set_status(status);
@@ -144,10 +145,15 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketHandler 
                             return;
                         }
 
+                        let mut inbox = proto::message::Inbox::new();
+                        inbox.set_field_type("Image".to_string());
+
                         let mut image_update = proto::image_update::ImageUpdate::new();
                         image_update.set_timestamp(frame_id);
                         image_update.set_image(bytes);
-                        if let Ok(msg) = image_update.write_to_bytes() {
+
+                        inbox.set_imageUpdate(image_update);
+                        if let Ok(msg) = inbox.write_to_bytes() {
                             ctx.binary(msg);
                         }
                     }
@@ -158,7 +164,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketHandler 
                         }
                     }
                     "StreamImage" => {
-                        if let Some(handle) = self.spawn_handle {
+                        if let Some(_) = self.spawn_handle {
                             println!("Already streaming.");
                             return;
                         }
@@ -188,10 +194,15 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketHandler 
                                     return;
                                 }
 
+                                let mut inbox = proto::message::Inbox::new();
+                                inbox.set_field_type("Image".to_string());
+        
                                 let mut image_update = proto::image_update::ImageUpdate::new();
                                 image_update.set_timestamp(frame_id);
                                 image_update.set_image(bytes);
-                                if let Ok(msg) = image_update.write_to_bytes() {
+
+                                inbox.set_imageUpdate(image_update);
+                                if let Ok(msg) = inbox.write_to_bytes() {
                                     ctx.binary(msg);
                                     frame_id += 1;
                                 }
