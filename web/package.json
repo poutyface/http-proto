@@ -20,7 +20,8 @@
     "protobufjs": "^6.10.2",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
-    "webpack": "^5.13.0",
+    "three": "^0.124.0",
+    "webpack": "^5.14.0",
     "webpack-cli": "^4.3.1",
     "worker-loader": "^3.0.7"
   },

@@ -20,3 +20,7 @@ npm i -D react react-dom
 # chart
 npm i -D chart.js
 
+# three.js
+npm i -D three
+
+
