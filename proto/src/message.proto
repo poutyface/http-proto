@@ -3,19 +3,40 @@ syntax = "proto3";
 import "image_update.proto";
 
 message Status {
-    string type = 1;
+    string status = 1;
 }
 
-message Position {
+message Position64i {
+    int64 x = 1;
+    int64 y = 2;
+    int64 z = 3;
+}
+
+message Position32f {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+
+message Point2DInt {
     int64 x = 1;
     int64 y = 2;
 }
 
+message State {
+    Status status = 1;
+    Position32f position = 2;
+    Point2DInt chartData = 3;
+}
+
 message Inbox {
     string type = 1;
+    uint64 timestamp = 2;
     oneof Blob {
-        Status status = 2;
-        Position position = 3;
-        ImageUpdate imageUpdate = 4;
+        State state = 3;
+        Status status = 4;
+        Position32f position = 5;
+        ImageUpdate imageUpdate = 6;
+        Point2DInt chartData = 7;
     }
 }

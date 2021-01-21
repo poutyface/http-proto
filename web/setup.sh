@@ -18,7 +18,7 @@ npm i -D @babel/core babel-loader @babel/preset-env @babel/preset-react @babel/r
 npm i -D react react-dom
 
 # chart
-npm i -D chart.js
+npm i -D chart.js@v3.0.0-beta.9
 
 # three.js
 npm i -D three

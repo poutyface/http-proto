@@ -1,6 +1,5 @@
 syntax = "proto3";
 
 message ImageUpdate {
-    uint64 timestamp = 1;
-    bytes image = 2;
+    bytes image = 1;
 }

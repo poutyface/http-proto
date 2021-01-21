@@ -1,340 +1,259 @@
 import { WebsocketEndpoint } from './websocket_endpoint.js';
-import Worker from './image_canvas.worker.js';
 
-import React, { useState, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
-
-import Chart from 'chart.js';
-
-const protobuf = require('protobufjs/light');
-const protoBundle = require("./proto_bundle.json");
-const protoRoot = protobuf.Root.fromJSON(protoBundle);
-const imageUpdate = protoRoot.lookupType("ImageUpdate");
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import ReactDOM, { render } from 'react-dom';
+import {MessageSampleView, MessageSampleControlView, MessageSampleControl, StateControl} from './MessageSample.js';
+import {LineChartView, LineChartControlView, LineChartControl}  from './LineChart.js';
+import {ImageDataView, ImageDataControl, ImageDataControlView, RemoteImageDataProvider} from './ImageData.js';
+import {PlaybackControl} from './Playback.js';
+import * as THREE from 'three';
 
 
-function LoadState() {
-    const [state, setState] = useState("Init");
-    return (<div><p>{state}</p></div>);
-}
 
-function RequestType1() {
-    const ws = useRef(null);
-    const textAreaEl = useRef(null);
-    const accTextValue = useRef("");
-    const [resType1, setResType1] = useState("");
-    const [resType2, setResType2] = useState("");
-    const [textValue, setTextValue] = useState("");
+
+function WorldView(props) {
+    const canvasEl = useRef();
+    const ctrl = props.ctrl;
+    console.log(ctrl);
 
     useEffect(() => {
-        ws.current = new WebsocketEndpoint("ws://127.0.0.1:8080/ws");
-        ws.current.init();
-        ws.current.on('type1', (data) => {
-            setResType1(JSON.stringify(data));
-        });
-        ws.current.on('Position', (data) => {
-            setResType2(JSON.stringify(data));
-            accTextValue.current += JSON.stringify(data) + '\n';
-            const textLength = accTextValue.current.length; 
-            if(textLength > 1000){
-                accTextValue.current = accTextValue.current.substring(textLength-1000);
-            }
-            setTextValue(accTextValue.current);
-        });
-        ws.current.on('Status', (data) => {
-            setResType2(JSON.stringify(data));
-            accTextValue.current += JSON.stringify(data) + '\n';
-            const textLength = accTextValue.current.length; 
-            if(textLength > 1000){
-                accTextValue.current = accTextValue.current.substring(textLength-1000);
-            }
-            setTextValue(accTextValue.current);
-        });
-
-        
+        canvasEl.current.appendChild(ctrl.renderer.canvas);
     }, []);
-    
-    useEffect(() => {
-        textAreaEl.current.scrollTop = textAreaEl.current.scrollHeight;
-    }, [textValue]);
-
-    function request(action) {
-        ws.current.sendData(action, {});
-    }
 
     return (
+        <div ref={canvasEl} />
+    );
+}
+
+class WorldRenderer {
+    constructor(){
+        this.canvas = document.createElement('canvas');
+        this.width = 600;
+        this.height = 300;
+
+        this.mouse = new THREE.Vector2(0, 0);
+        this.canvas.addEventListener('mousemove', (event) => {
+            event.preventDefault();
+            const x = event.clientX - this.canvas.getBoundingClientRect().left;
+            const y = event.clientY - this.canvas.getBoundingClientRect().top;
+            this.mouseMoved(x, y);
+            //console.log(`mouse in canvas: ${x} ${y}`);
+        });
+        this.canvas.addEventListener('wheel', (event) => {
+            event.preventDefault();
+            const deltaX = event.deltaX;
+            const deltaY = event.deltaY;
+            this.mouseWheeled(deltaX, deltaY);
+        });
+
+        this.renderer = new THREE.WebGLRenderer({canvas: this.canvas});
+        this.renderer.setSize(this.width, this.height);
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+        
+        // camera
+        const FOV = 60;
+        const camera_distance = (this.height/2) / Math.tan((FOV/2)*(Math.PI/180));
+
+        this.camera = new THREE.PerspectiveCamera(FOV, this.width/this.height, 1, camera_distance * 2);
+        this.camera.position.z = camera_distance;
+        
+        console.log(`render: canvas w:${this.canvas.width} h:${this.canvas.height}`);
+        console.log(`render: camera pos ${this.camera.position.x} ${this.camera.position.y} ${this.camera.position.z}`);
+
+        this.scene = new THREE.Scene();
+        
+        // light 
+        this.light = new THREE.PointLight(0x00ffff);
+        this.light.position.set(0, 0, 400);
+        this.scene.add(this.light);
+
+        // geometory
+        const geo = new THREE.BoxGeometry(100,100,100);
+        const mat = new THREE.MeshLambertMaterial({color: 0xffffff});
+        this.mesh = new THREE.Mesh(geo, mat);
+        this.mesh.rotation.x = Math.PI / 4;
+        this.mesh.rotation.y = Math.PI / 4;
+        this.scene.add(this.mesh);
+
+        this.renderer.render(this.scene, this.camera);
+    }
+
+    update(data){
+        this.mesh.rotation.x += 0.01;
+        this.mesh.rotation.y += 0.01;
+
+        /*
+        this.mesh.position.x = data.position.x;
+        this.mesh.position.y = data.position.y;
+        this.mesh.position.z = data.position.z;
+        */
+        //console.log(data);
+
+        this.renderer.render(this.scene, this.camera);
+    }
+
+    mouseMoved(x, y){
+        this.mouse.x = x - (this.width / 2);
+        this.mouse.y = -y + (this.height / 2);
+
+        this.light.position.x = this.mouse.x;
+        this.light.position.y = this.mouse.y;
+    }
+
+    mouseWheeled(deltaX, deltaY){
+        if(deltaY < 0){
+            this.camera.position.z += 10.0;
+        } else {
+            this.camera.position.z -= 10.0;
+        }
+        this.renderer.render(this.scene, this.camera);
+
+        //console.log(`${deltaX}, ${deltaY}`);
+        //console.log(`render: camera pos ${this.camera.position.x} ${this.camera.position.y} ${this.camera.position.z}`);
+
+    }
+}
+
+class WorldControl {
+    constructor(){
+        this.renderer = new WorldRenderer();
+    }
+
+    update(data){
+        this.renderer.update(data);
+    }
+}
+
+
+function MainView(props) {
+    const modules = props.store.modules;
+    const [isPlaying, setIsPlaying] = useState(modules.playbackCtrl.isPlaying);
+
+    console.log("App");
+    console.log(isPlaying);
+
+    useEffect(() => {
+        return () => {
+            console.log("detach");
+        }
+    }, []);
+
+    const play = () => {
+        modules.playbackCtrl.start();
+        setIsPlaying(true);
+    }
+
+    const stop = () => {
+        modules.playbackCtrl.stop();
+        setIsPlaying(false);
+    };
+
+    const step = () => {
+        modules.playbackCtrl.next();
+    }
+    
+    return (
         <div>
-        <button onClick={() => request("type1")}>Type1: Tx:JSON, Rx:JSON</button>
-        <p>{resType1}</p>
-        <button onClick={() => request("Position")}>Type2: position Tx:JSON, Rx:Proto</button>
-        <button onClick={() => request("Status")}>Type3: status Tx:JSON, Rx:Proto</button>
-        <p>{resType2}</p>
-        <textarea ref={textAreaEl} defaultValue={textValue} cols="80" rows="5"></textarea>
+        <button onClick={() => {step()}}>STEP WORLD</button>
+        {isPlaying 
+           ? <button onClick={() => {stop()}}>STOP WORLD</button>
+           : <button onClick={() => {play()}}>PLAY WORLD</button>
+        }
+        <WorldView ctrl={modules.worldCtrl} />
+        <div style={{display: 'flex', width: '100%'}}>
+        <LineChartView ctrl={modules.lineChartCtrl} />
+        <LineChartControlView ctrl={modules.lineChartCtrl} />
+        <MessageSampleView ctrl={modules.messageSampleCtrl} />
+        <MessageSampleControlView ctrl={modules.messageSampleCtrl} />
+        </div>
+        <ImageDataView ctrl={modules.imageDataCtrl} />
+        <ImageDataControlView ctrl={modules.imageDataCtrl} />
+
         </div>
     );
 }
 
-
-class RemoteImageDataProvider {
-    constructor(address, resource){
-        this.address = address;
-        this.resource = resource;
-        this.ws = new WebsocketEndpoint(this.address);
-        this.ws.init();
-        this.cacheStore = {};
-        this.func = null;
-    }
-    
-    on(func){
-        this.func = func;
-        this.ws.on('Image', (data) => {
-            console.log(data.imageUpdate.timestamp);
-            this.cacheStore[data.imageUpdate.timestamp] = data.imageUpdate;
-            this.func(data.imageUpdate);
-        });
-    }
-    
-    getMessage(message, frameId=-1){
-        if(message === 'Image' && frameId in this.cacheStore){
-            console.log(frameId);
-            this.func(this.cacheStore[frameId]);
-        } else {
-            if(frameId === -1){
-                this.ws.sendData(message, {});
-            } else{
-                this.ws.sendData(message, {resource: this.resource, frame_id: frameId, scale_x: 0.5, scale_y: 0.5});
-            }
-        }
-    }
+function ControlView(props){
+    return (<div />);
 }
 
-class Playback {
-    constructor() {
-        this.timestamp = -1;
-        this.reset();
-    }
-
-    seek(timestamp){
-        this.timestamp = timestamp - 1;
-    }
-
-    next(){
-        this.timestamp += 1;
-        return this.timestamp;
-    }
-
-    back(){
-        this.timestamp -= 1;
-        return this.timestamp;
-    }
-
-    reset(){
-        this.timestamp = -1;
-    }
-}
-
-class PlaybackController {
-    constructor(){
-        this.dataProvider = new RemoteImageDataProvider("ws://127.0.0.1:8080/ws", "test_images");
-        this.playback = new Playback();
-        this.handle = null;
-        this.waitResponse = false;
-        this.isStreaming = false;
-    }
-
-    seek(timestamp) {
-        this.playback.seek(timestamp);
-    }
-
-    on(func) {
-        this.dataProvider.on((data) => {
-            this.waitResponse = false;
-            if(this.isStreaming){
-                this.playback.next();
-            }
-
-            func(data);
-        });
-    }
-
-    startStream(){
-        this.isStreaming = true;
-        this.dataProvider.getMessage("StreamImage", this.playback.next());
-    }
-    
-    stopStream(){
-        this.isStreaming = false;
-        this.dataProvider.getMessage("StopStreamImage");
-    }
-
-    _animate(){
-        if(this.handle !== null){
-            cancelAnimationFrame(this.handle);
-            this.handle = null;
-        }
-        
-        this.handle = requestAnimationFrame(() => {
-            this._animate();
-        });
-        
-        if(this.waitResponse === false){
-            this.waitResponse = true;
-            this.dataProvider.getMessage("Image", this.playback.next());
-        }
-    }
-
-    play() {
-        if(this.handle === null){
-            this._animate();
-        } else {
-            cancelAnimationFrame(this.handle);
-            this.handle = null;
-            this.waitResponse = false;
-        }
-    }
-
-    step(){
-        this.dataProvider.getMessage("Image", this.playback.next());
-    }
-
-    back(){
-        this.dataProvider.getMessage("Image", this.playback.back());
-    }
-
-}
-
-function ImagePlaybackControll(props) {
-    const [isStreaming, setIsStreaming] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const canvasEl = useRef(null);
-    const worker = useRef(null);
-    const ctrl = useRef(props.playbackCtrl);
-
-    useEffect(() => {
-        worker.current = new Worker();
-        const offscreen = canvasEl.current.transferControlToOffscreen();
-        worker.current.postMessage({type: "initialize", canvas: offscreen}, [offscreen]);
-        ctrl.current.seek(1);
-
-        ctrl.current.on((data) => {
-            worker.current.postMessage({type: "renderImage", data: data});
-        });
-
-    }, []);
-
-   return (
-    <>
-    {isStreaming
-        ? <button onClick={() => {ctrl.current.stopStream(); setIsStreaming(false)}}>stop</button>
-        : <button onClick={() => {ctrl.current.startStream(); setIsStreaming(true)}}>stream</button>}
-    {isPlaying
-        ? <button onClick={() => {ctrl.current.play(); setIsPlaying(false)}}>stop</button>
-        : <button onClick={() => {ctrl.current.play(); setIsPlaying(true)}}>play</button>}        
-    <button onClick={() => ctrl.current.seek(1)}>reset</button>
-    <button onClick={() => ctrl.current.step()}>step</button>
-    <button onClick={() => ctrl.current.back()}>back</button>
-    <canvas ref={canvasEl}></canvas>
-    </>
-);
-
-}
-
-function LineChart(props) {
-    const canvasEl = useRef(null);
-    const ctx = useRef(null);
-    const chart = useRef(null);
-    const ws = useRef(null);
-    const timestamp = useRef(0);
-
-    useEffect(() => {
-        ws.current = new WebsocketEndpoint("ws://127.0.0.1:8080/ws");
-        ws.current.init();
-        ws.current.on(props.data, (data) => {
-            console.log(data);
-            update(data.data.x, data.data.y);
-            //setResType1(JSON.stringify(data));
-            //chart.current.
-        });
-
-        ctx.current = canvasEl.current.getContext('2d');
-        chart.current = new Chart(ctx.current, {
-            type: 'line',
-            data: {
-                labels: [1,2,3,4,5],
-                datasets: [{
-                    data: [
-                        1,2,4,8,10,
-                    ],
-                    cubicInterpolationMode: 'monotone',
-                    lineTension: 0,
-                }]
-            },
-            options: {
-                title: {display: true, text: props.data},
-                responsive: true,
-                animation: false,
-                legend: {
-                    display: false,
-                },
-                scales: {
-                    yAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: props.y,
-                        }
-                    }],
-                    xAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: props.x,
-                        }                        
-                    }],
-                },
-            }
-        });
-    }, []);
-
-    const update = (x, y) => {
-        if(chart.current.data.labels.length > 20){
-            chart.current.data.labels.shift();
-            chart.current.data.datasets[0].data.shift();
-        }
-        chart.current.data.labels.push(x);
-        chart.current.data.datasets[0].data.push(y);
-
-        chart.current.update();
-    };
-
-    const fetchData = () => {
-        ws.current.sendData(props.data, {timestamp: timestamp.current});
-        timestamp.current += 1;
-    };
+function App(props) {
+    const [mainView, setMainView] = useState(true);
 
     return (
         <>
-        <div style={{position: 'relative', height:400, width:700}}>
-            <canvas ref={canvasEl}></canvas>
-        </div>
-        <button onClick={() => fetchData()}>fetch</button>
+        {mainView
+            ? <button onClick={() => {setMainView(false)}}>Setting</button>
+            : <button onClick={() => {setMainView(true)}}>Main</button>}
+        {mainView
+            ? <MainView store={props.store} />
+            : <ControlView stor={props.stor} />}
         </>
     );
 }
 
-function App() {
-    const playbackCtrl = useRef(new PlaybackController());
+function load(){
+    const dataProvider = new WebsocketEndpoint("ws://127.0.0.1:8080/ws");
+    const lineChartCtrl = new LineChartControl('ChartPosition', 'timestamp', 'pos', dataProvider);
+    const messageSampleCtrl = new MessageSampleControl(dataProvider);
 
-    return (
-        <div>
-        <LoadState />
-        <LineChart x={"timestamp"} y={"points"} data={"chart-1"}/>
-        <RequestType1 />
-        <ImagePlaybackControll playbackCtrl={playbackCtrl.current} />
-        </div>
+    const imageDataProvider = new RemoteImageDataProvider("ws://127.0.0.1:8080/ws", "test_images");
+    const imageDataCtrl = new ImageDataControl(imageDataProvider);
+    imageDataCtrl.seek(1);
+    imageDataCtrl.scale = 0.5;
+
+    const worldCtrl = new WorldControl();
+
+    const stateCtrl = new StateControl(dataProvider);
+    stateCtrl.on((data) => {
+        const state = data.state;
+        if(state.position){
+            messageSampleCtrl.update(state.position);
+        }
+
+        if(state.status){
+            messageSampleCtrl.update(state.status);
+        }
+
+        if(state.chartData){
+            lineChartCtrl.update(state.chartData);
+        }
+
+        worldCtrl.update(state);
+    });
+
+    const playbackCtrl = new PlaybackControl();
+    playbackCtrl.seek(1);
+    playbackCtrl.on((timestamp) => {
+        //lineChartCtrl.current.setTimestamp(timestamp.current);
+        //messageSampleCtrl.current.setTimestamp(timestamp.current);
+        imageDataCtrl.seek(timestamp);
+        stateCtrl.setTimestamp(timestamp);
+        
+        //lineChartCtrl.current.getMessage();
+        //messageSampleCtrl.current.getMessage();
+        imageDataCtrl.step();
+        stateCtrl.getMessage();
+    });
+
+
+    const store = {
+        timestamp: 1,
+        modules :{
+            playbackCtrl: playbackCtrl,
+            lineChartCtrl: lineChartCtrl,
+            messageSampleCtrl: messageSampleCtrl,
+            imageDataCtrl: imageDataCtrl,
+            worldCtrl: worldCtrl,
+            stateCtrl: stateCtrl,
+        },
+        hmi: {},
+    };
+
+    ReactDOM.render(
+        <App store={store} />,
+        document.getElementById("root")  
     );
 }
 
-ReactDOM.render(
-  <App />,
-  document.getElementById("root")  
-);
+load();

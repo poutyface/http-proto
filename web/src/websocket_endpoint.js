@@ -8,8 +8,8 @@ export class WebsocketEndpoint {
     constructor(serverAddress) {
         this.serverAddress = serverAddress;
         this.websocket = null;
-        this.eventHandlers = {};
-        this.eventHandlerOnBinary = null;
+        this.handlers = {};
+        this.init();
     }
     
     init(){
@@ -34,14 +34,18 @@ export class WebsocketEndpoint {
                 if (typeof event.data === 'string'){
                     const data = JSON.parse(event.data);
                     const messageType = data['type'];
-                    if(this.eventHandlers[messageType]){
-                        this.eventHandlers[messageType](data);
+                    if(this.handlers[messageType]){
+                        for(const handler of this.handlers[messageType]){
+                            handler(data);
+                        }
                     }
                 } else {
                     const inbox = Inbox.decode(new Uint8Array(event.data));
                     const messageType = inbox.type;
-                    if(this.eventHandlers[messageType]){
-                        this.eventHandlers[messageType](inbox);
+                    if(this.handlers[messageType]){
+                        for(const handler of this.handlers[messageType]){
+                            handler(inbox);
+                        }
                     }
                     
                 }
@@ -49,12 +53,11 @@ export class WebsocketEndpoint {
         };
     }
 
-    on(eventName, callback) {
-        this.eventHandlers[eventName] = callback;
-    }
-
-    onBinary(fn){
-        this.eventHanderOnBinary = fn;
+    on(eventName, handler) {
+        if(!this.handlers[eventName]){
+            this.handlers[eventName] = [];
+        }
+        this.handlers[eventName].push(handler);
     }
 
     // send json message 

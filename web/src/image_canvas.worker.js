@@ -28,9 +28,9 @@ self.addEventListener('message', (event) => {
 
     var bitmap = self.createImageBitmap(blob);
     bitmap.then(bitmap => {
-        offscreen.width = bitmap.width * 2;
-        offscreen.height = bitmap.height * 2;
-        ctx.drawImage(bitmap, 0, 0, bitmap.width * 2, bitmap.height * 2);
+        offscreen.width = bitmap.width;
+        offscreen.height = bitmap.height;
+        ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
         //ctx.transferFromImageBitmap(bitmap); 
     });
 });
