@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {Playback} from './Playback.js';
+import {Playback, PlaybackControl} from './Playback.js';
 import { WebsocketEndpoint } from './websocket_endpoint.js';
 import Worker from './image_canvas.worker.js';
 
@@ -16,9 +16,9 @@ export class RemoteImageDataProvider {
     on(handler){
         this.handler = handler;
         this.ws.on('Image', (data) => {
-            this.cacheStore[data.timestamp] = data.imageUpdate;
+            this.cacheStore[data.timestamp] = data;
             if(this.handler){
-                this.handler(data.imageUpdate);
+                this.handler(data);
             }
         });
     }
@@ -40,27 +40,32 @@ export class RemoteImageDataProvider {
 export class ImageDataControl {
     constructor(dataProvider){
         this.dataProvider = dataProvider;
-        this.playback = new Playback();
-        this.handle = null;
-        this.waitResponse = false;
+        this.playback = new PlaybackControl();
         this.isStreaming = false;
-        this.isPlaying = false;
         this.scale = 1.0;
         this.handler = null;
 
+        this.playback.on((timestamp) => {
+            if(this.isStreaming){
+                this.dataProvider.getMessage("StreamImage", this.scale, timestamp);
+            } else {
+                this.dataProvider.getMessage("Image", this.scale, timestamp);
+            }
+        });
+
         this.worker = new Worker();
+        this.worker.addEventListener('message', (event) => {
+            if(this.isStreaming){
+                this.playback.seek(event.data.timestamp);
+            }
+        });
+
         this.canvas = document.createElement("canvas");
         const offscreen = this.canvas.transferControlToOffscreen();
         this.worker.postMessage({type: "initialize", canvas: offscreen}, [offscreen]);
 
-
         this.dataProvider.on((data) => {
-            this.waitResponse = false;
-            if(this.isStreaming){
-                this.playback.next();
-            }
-
-            this.worker.postMessage({type: "renderImage", data: data});
+            this.worker.postMessage({type: "render", inbox: data});
         });
     }
 
@@ -70,7 +75,7 @@ export class ImageDataControl {
 
     startStream(){
         this.isStreaming = true;
-        this.dataProvider.getMessage("StreamImage", this.scale, this.playback.next());
+        this.playback.next();
     }
     
     stopStream(){
@@ -78,42 +83,21 @@ export class ImageDataControl {
         this.dataProvider.getMessage("StopStreamImage");
     }
 
-    _animate(){
-        if(this.handle){
-            cancelAnimationFrame(this.handle);
-            this.handle = null;
-        }
-        
-        this.handle = requestAnimationFrame(() => {
-            this._animate();
-        });
-        
-        if(!this.waitResponse){
-            this.waitResponse = true;
-            this.dataProvider.getMessage("Image", this.scale, this.playback.next());
-        }
+    play() {
+        this.playback.start();
     }
 
-    play() {
-        if(!this.handle){
-            this.isPlaying = true;
-            this._animate();
-        } else {
-            this.isPlaying = false;
-            cancelAnimationFrame(this.handle);
-            this.handle = null;
-            this.waitResponse = false;
-        }
+    stop(){
+        this.playback.stop();
     }
 
     step(){
-        this.dataProvider.getMessage("Image", this.scale, this.playback.next());
+        this.playback.next();
     }
 
     back(){
-        this.dataProvider.getMessage("Image", this.scale, this.playback.back());
+        this.playback.back();
     }
-
 }
 
 
@@ -132,7 +116,7 @@ export function ImageDataView(props) {
 export function ImageDataControlView(props) {
     const ctrl = props.ctrl;
     const [isStreaming, setIsStreaming] = useState(ctrl.isStreaming);
-    const [isPlaying, setIsPlaying] = useState(ctrl.isPlaying);
+    const [isPlaying, setIsPlaying] = useState(ctrl.playback.isPlaying);
  
     return (
         <div>
@@ -140,8 +124,8 @@ export function ImageDataControlView(props) {
             ? <button onClick={() => {ctrl.stopStream(); setIsStreaming(ctrl.isStreaming); }}>stop</button>
             : <button onClick={() => {ctrl.startStream(); setIsStreaming(ctrl.isStreaming); }}>stream</button>}
         {isPlaying
-            ? <button onClick={() => {ctrl.play(); setIsPlaying(ctrl.isPlaying); }}>stop</button>
-            : <button onClick={() => {ctrl.play(); setIsPlaying(ctrl.isPlaying); }}>play</button>}        
+            ? <button onClick={() => {ctrl.stop(); setIsPlaying(ctrl.playback.isPlaying); }}>stop</button>
+            : <button onClick={() => {ctrl.play(); setIsPlaying(ctrl.playback.isPlaying); }}>play</button>}        
         <button onClick={() => ctrl.seek(1)}>reset</button>
         <button onClick={() => ctrl.step()}>step</button>
         <button onClick={() => ctrl.back()}>back</button>

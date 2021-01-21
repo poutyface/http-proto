@@ -163,9 +163,9 @@ impl WebSocketHandler {
                 }
 
                 let mut inbox = create_inbox("Image", timestamp);
-                let mut image_update = proto::image_update::ImageUpdate::new();
-                image_update.set_image(bytes);
-                inbox.set_imageUpdate(image_update);
+                let mut image_proto = proto::image::ImageData::new();
+                image_proto.set_image(bytes);
+                inbox.set_image(image_proto);
                 self.send_inbox(&mut inbox, ctx);
             }
             "StopStreamImage" => {
@@ -206,10 +206,10 @@ impl WebSocketHandler {
                         }
 
                         let mut inbox = create_inbox("Image", timestamp);        
-                        let mut image_update = proto::image_update::ImageUpdate::new();
-                        image_update.set_image(bytes);
+                        let mut image_proto = proto::image::ImageData::new();
+                        image_proto.set_image(bytes);
 
-                        inbox.set_imageUpdate(image_update);
+                        inbox.set_image(image_proto);
                         if let Ok(msg) = inbox.write_to_bytes() {
                             ctx.binary(msg);
                             timestamp += 1;

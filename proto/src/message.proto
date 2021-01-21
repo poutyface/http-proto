@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "image_update.proto";
+import "image.proto";
 
 message Status {
     string status = 1;
@@ -36,7 +36,7 @@ message Inbox {
         State state = 3;
         Status status = 4;
         Position32f position = 5;
-        ImageUpdate imageUpdate = 6;
+        ImageData image = 6;
         Point2DInt chartData = 7;
     }
 }

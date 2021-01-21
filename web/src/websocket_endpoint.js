@@ -20,14 +20,6 @@ export class WebsocketEndpoint {
             console.error(`Failed to establish: ${error}`);
             return;
         }
-        
-        this.websocket.onopen = () => {
-            
-        };
-        
-        this.websocket.onerror = (error) => {
-            
-        };
 
         this.websocket.onmessage = (event) => {
             if (event && event.data){
