@@ -1,6 +1,4 @@
 use std::{
-    path::{Path, PathBuf},
-    env,
     process::Command,
 };
 use glob::glob;
