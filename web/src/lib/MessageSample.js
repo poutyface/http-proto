@@ -1,32 +1,3 @@
-import React, { useState, useEffect, useRef, createElement} from 'react';
-
-export function MessageSampleView(props) {
-    const textAreaEl = useRef();
-
-    useEffect(() => {
-        textAreaEl.current.appendChild(props.ctrl.textarea);
-    }, []);
-
-    return (
-        <div ref={textAreaEl} />
-    );
-}
-
-export function MessageSampleControlView(props) {
-    const ctrl = useRef(props.ctrl);
-    const request = (type) => {
-        ctrl.current.getMessage(type);
-    }
-
-    return (
-        <div>
-        <button onClick={() => request("type1")}>Type1: Tx:JSON, Rx:JSON</button>        
-        <button onClick={() => request("Position")}>Type2: position Tx:JSON, Rx:Proto</button>
-        <button onClick={() => request("Status")}>Type3: status Tx:JSON, Rx:Proto</button>
-        <button onClick={() => request("")}>All</button>
-        </div>
-    );
-}
 
 export class MessageSampleControl {
     constructor(dataProvider) {
@@ -95,9 +66,6 @@ export class MessageSampleControl {
     }
 
 }
-
-
-
 
 export class StateControl {
     constructor(dataProvider) {

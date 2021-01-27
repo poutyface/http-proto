@@ -1,8 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {Playback, PlaybackControl} from './Playback.js';
-import { WebsocketEndpoint } from './websocket_endpoint.js';
-import Worker from './image_canvas.worker.js';
-
+import {Playback, PlaybackControl} from '@/lib/Playback.js';
+import { WebsocketEndpoint } from '@/lib/websocket_endpoint.js';
+import Worker from '@/lib/image_canvas.worker.js';
 
 export class RemoteImageDataProvider {
     constructor(address, resource){
@@ -83,7 +81,7 @@ export class ImageDataControl {
         this.dataProvider.getMessage("StopStreamImage");
     }
 
-    play() {
+    start() {
         this.playback.start();
     }
 
@@ -100,35 +98,3 @@ export class ImageDataControl {
     }
 }
 
-
-export function ImageDataView(props) {
-    const canvasEl = useRef();
-    // https://stackoverflow.com/questions/30296341/rendering-returning-html5-canvas-in-reactjs
-    useEffect(() => {
-        canvasEl.current.appendChild(props.ctrl.canvas);
-    }, []);
-
-    return (
-        <div ref={canvasEl} />
-    );
-}
-
-export function ImageDataControlView(props) {
-    const ctrl = props.ctrl;
-    const [isStreaming, setIsStreaming] = useState(ctrl.isStreaming);
-    const [isPlaying, setIsPlaying] = useState(ctrl.playback.isPlaying);
- 
-    return (
-        <div>
-        {isStreaming
-            ? <button onClick={() => {ctrl.stopStream(); setIsStreaming(ctrl.isStreaming); }}>stop</button>
-            : <button onClick={() => {ctrl.startStream(); setIsStreaming(ctrl.isStreaming); }}>stream</button>}
-        {isPlaying
-            ? <button onClick={() => {ctrl.stop(); setIsPlaying(ctrl.playback.isPlaying); }}>stop</button>
-            : <button onClick={() => {ctrl.play(); setIsPlaying(ctrl.playback.isPlaying); }}>play</button>}        
-        <button onClick={() => ctrl.seek(1)}>reset</button>
-        <button onClick={() => ctrl.step()}>step</button>
-        <button onClick={() => ctrl.back()}>back</button>
-        </div>
-        );    
-}

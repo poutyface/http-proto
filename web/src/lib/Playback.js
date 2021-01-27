@@ -1,4 +1,3 @@
-
 export class Playback {
     constructor() {
         this.timestamp = -1;

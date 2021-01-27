@@ -1,29 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Worker from './chart_canvas.worker.js';
-
-export function LineChartView(props) {
-    const canvasEl = useRef();
-
-    useEffect(() => {
-        canvasEl.current.appendChild(props.ctrl.canvas);
-    }, []);
-
-    return (
-        <div ref={canvasEl} style={{ display: "flex", width: "100%"}} />
-    );
-}
-
-
-export function LineChartControlView(props) {
-    const getMessage = () => {
-        props.ctrl.getMessage();
-    };
-
-    return (
-        <button onClick={() => { getMessage() }}>Get</button>
-    );
-}
-
+import Worker from '@/lib/chart_canvas.worker.js';
 
 export class LineChartControl {
     constructor(dataName, axisX, axisY, dataProvider) {

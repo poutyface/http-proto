@@ -1,5 +1,5 @@
 const protobuf = require('protobufjs/light');
-const protoBundle = require("./proto_bundle.json");
+const protoBundle = require("@/proto_bundle.json");
 const protoRoot = protobuf.Root.fromJSON(protoBundle);
 const Inbox = protoRoot.lookupType("Inbox");
 
@@ -32,7 +32,12 @@ export class WebsocketEndpoint {
                         }
                     }
                 } else {
-                    const inbox = Inbox.decode(new Uint8Array(event.data));
+                    const message = Inbox.decode(new Uint8Array(event.data));
+                    // To Object, Becase protobuf v3 don't sent a 0 value(default value).
+                    const inbox = Inbox.toObject(message, {
+                        defaults: true,
+                        enums: String,
+                    });
                     const messageType = inbox.type;
                     if(this.handlers[messageType]){
                         for(const handler of this.handlers[messageType]){
@@ -56,7 +61,7 @@ export class WebsocketEndpoint {
     sendData(eventName, data) {
         let message = {
             type: eventName,
-            data: data,
+            fields: data,
         };
         this.websocket.send(JSON.stringify(message));
     }
