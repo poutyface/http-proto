@@ -125,7 +125,7 @@ class WorldRenderer {
     }
 }
 
-export class WorldControl {
+export class WorldController {
     constructor(){
         this.renderer = new WorldRenderer();
     }

@@ -365,7 +365,7 @@ async fn main() -> std::io::Result<()> {
             .route("/image_service", web::get().to(image_service))
             .service(actix_files::Files::new("/", "./web/dist").show_files_listing())
     })
-    .bind("127.0.0.1:8080")?
+    .bind("127.0.0.1:4567")?
     .run()
     .await
 }

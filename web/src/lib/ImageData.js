@@ -1,6 +1,6 @@
-import {Playback, PlaybackControl} from '@/lib/Playback.js';
-import { WebsocketEndpoint } from '@/lib/websocket_endpoint.js';
-import Worker from '@/lib/image_canvas.worker.js';
+import {Playback, PlaybackController} from 'lib/Playback.js';
+import { WebsocketEndpoint } from 'lib/websocket_endpoint.js';
+import Worker from 'lib/image_canvas.worker.js';
 
 export class RemoteImageDataProvider {
     constructor(address, resource){
@@ -9,6 +9,14 @@ export class RemoteImageDataProvider {
         this.ws = new WebsocketEndpoint(this.address);
         this.cacheStore = {};
         this.handler = null;
+    }
+
+    connect(){
+        try {
+            this.ws.connect();
+        } catch (error) {
+            throw error;
+        }
     }
     
     on(handler){
@@ -35,13 +43,12 @@ export class RemoteImageDataProvider {
     }
 }
 
-export class ImageDataControl {
+export class ImageDataController {
     constructor(dataProvider){
         this.dataProvider = dataProvider;
-        this.playback = new PlaybackControl();
+        this.playback = new PlaybackController();
         this.isStreaming = false;
         this.scale = 1.0;
-        this.handler = null;
 
         this.playback.on((timestamp) => {
             if(this.isStreaming){
@@ -65,6 +72,11 @@ export class ImageDataControl {
         this.dataProvider.on((data) => {
             this.worker.postMessage({type: "render", inbox: data});
         });
+    }
+
+    reset(){
+        this.playback.reset();
+        this.isStreaming = false;
     }
 
     seek(timestamp) {

@@ -1,5 +1,5 @@
 const protobuf = require('protobufjs/light');
-const protoBundle = require("@/proto_bundle.json");
+const protoBundle = require("proto_bundle.json");
 const protoRoot = protobuf.Root.fromJSON(protoBundle);
 const Inbox = protoRoot.lookupType("Inbox");
 
@@ -9,16 +9,23 @@ export class WebsocketEndpoint {
         this.serverAddress = serverAddress;
         this.websocket = null;
         this.handlers = {};
-        this.init();
     }
     
-    init(){
+    connect(){
         try {
             this.websocket = new WebSocket(this.serverAddress);
             this.websocket.binaryType = 'arraybuffer';
         } catch (error) {
-            console.error(`Failed to establish: ${error}`);
-            return;
+            console.error(`WebSocket: Failed to establish: ${error.message}`);
+            throw error;
+        }
+
+        this.websocket.onclose = (event) => {
+            console.log("Websocket close");
+        }
+
+        this.websocket.onerror = (event) => {
+            console.log("Websocket error `${error.message}`");
         }
 
         this.websocket.onmessage = (event) => {

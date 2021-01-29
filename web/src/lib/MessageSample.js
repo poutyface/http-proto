@@ -1,5 +1,5 @@
 
-export class MessageSampleControl {
+export class MessageSampleController {
     constructor(dataProvider) {
         console.log("messagesample: constructor");
         this.dataProvider = dataProvider;
@@ -67,7 +67,7 @@ export class MessageSampleControl {
 
 }
 
-export class StateControl {
+export class StateController {
     constructor(dataProvider) {
         console.log("StateControl: constructor");
         this.dataProvider = dataProvider;

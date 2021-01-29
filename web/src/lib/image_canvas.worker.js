@@ -1,5 +1,5 @@
 const protobuf = require('protobufjs/light');
-const protoBundle = require("@/proto_bundle.json");
+const protoBundle = require("proto_bundle.json");
 const protoRoot = protobuf.Root.fromJSON(protoBundle);
 
 var offscreen = null;

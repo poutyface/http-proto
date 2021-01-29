@@ -6,8 +6,8 @@ export function WorldView(props) {
     console.log("WorldView");
 
     useEffect(() => {
-        canvasEl.current.appendChild(props.ctrl.renderer.canvas);
-    }, []);
+        canvasEl.current.appendChild(props.controller.renderer.canvas);
+    }, [props.controller]);
 
     return (
         <div ref={canvasEl} />

@@ -1,6 +1,6 @@
-import Worker from '@/lib/chart_canvas.worker.js';
+import Worker from 'lib/chart_canvas.worker.js';
 
-export class LineChartControl {
+export class LineChartController {
     constructor(dataName, axisX, axisY, dataProvider) {
         this.dataName = dataName;
         this.axisX = axisX;

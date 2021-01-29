@@ -24,7 +24,7 @@ export class Playback {
 }
 
 
-export class PlaybackControl {
+export class PlaybackController {
     constructor(){
         this.playback = new Playback();
         this.handler = null;
