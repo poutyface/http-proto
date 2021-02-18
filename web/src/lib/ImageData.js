@@ -18,6 +18,10 @@ export class RemoteImageDataProvider {
             throw error;
         }
     }
+
+    close(){
+        this.ws.close();
+    }
     
     on(handler){
         this.handler = handler;

@@ -23,7 +23,7 @@ export class MessageSampleController {
             this.data.message = data;
             this.update(data);
         });
-        this.dataProvider.on('Status', (data) => {
+        this.dataProvider.on('Debug', (data) => {
             this.data.message = data;
             this.update(data);
         });
@@ -58,7 +58,7 @@ export class MessageSampleController {
         if(type === ''){
             this.dataProvider.sendData('type1', {timestamp: this.timestamp});
             this.dataProvider.sendData('Position', {timestamp: this.timestamp});
-            this.dataProvider.sendData('Status', {timestamp: this.timestamp});
+            this.dataProvider.sendData('Debug', {timestamp: this.timestamp});
         } else {
             this.dataProvider.sendData(type, {timestamp:this.timestamp});
         }
@@ -67,16 +67,17 @@ export class MessageSampleController {
 
 }
 
-export class StateController {
-    constructor(dataProvider) {
-        console.log("StateControl: constructor");
+export class MessageController {
+    constructor(messageType, dataProvider) {
+        console.log("MessageControl: constructor");
         this.dataProvider = dataProvider;
+        this.messageType = messageType;
         this.handler = null;
         this.timestamp = 0;
 
-        this.dataProvider.on('State', (data) => {
+        this.dataProvider.on(this.messageType, (inbox) => {
             if(this.handler){
-                this.handler(data);
+                this.handler(inbox);
             } 
         });
     }
@@ -94,7 +95,7 @@ export class StateController {
     }
 
     getMessage() {
-        this.dataProvider.sendData('State', {timestamp:this.timestamp});
+        this.dataProvider.sendData(this.messageType, {timestamp:this.timestamp});
     }
 }
 

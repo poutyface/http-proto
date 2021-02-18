@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext } from 'react';
 
-import { MessageSampleController, StateController } from 'lib/MessageSample.js';
+import { MessageSampleController, MessageController } from 'lib/MessageSample.js';
 import { LineChartController }  from 'lib/LineChart.js';
 import { ImageDataController, RemoteImageDataProvider } from 'lib/ImageData.js';
 import { PlaybackController } from 'lib/Playback.js';
@@ -40,28 +40,36 @@ export const createInitialState = () => {
             error: error,
         };
     }
+
+    window.onbeforeunload = (event) => {
+        console.log("onbeforeunload");
+        dataProvider.close();
+        imageDataProvider.close();
+    };
+
     const imageDataController = new ImageDataController(imageDataProvider);
     imageDataController.seek(1);
     imageDataController.scale = 0.5;
 
     const worldController = new WorldController();
     
-    const stateController = new StateController(dataProvider);
-    stateController.on((data) => {
-        const state = data.state;
-        if(state.position){
-            messageSampleController.update(state.position);
+    const statusController = new MessageController('Status', dataProvider);
+    statusController.on((inbox) => {
+        const status = inbox.status;
+        console.log(inbox);
+        if(status.position){
+            messageSampleController.update(status.position);
         }
 
-        if(state.status){
-            messageSampleController.update(state.status);
+        if(status.debug){
+            messageSampleController.update(status.debug);
         }
 
-        if(state.chartData){
-            lineChartController.update(state.chartData);
+        if(status.chartData){
+            lineChartController.update(status.chartData);
         }
 
-        worldController.update(state);
+        worldController.update(status);
     });
     
     const playbackController = new PlaybackController();
@@ -70,12 +78,12 @@ export const createInitialState = () => {
         //lineChartCtrl.current.setTimestamp(timestamp.current);
         //messageSampleCtrl.current.setTimestamp(timestamp.current);
         imageDataController.seek(timestamp);
-        stateController.setTimestamp(timestamp);
+        statusController.setTimestamp(timestamp);
         
         //lineChartCtrl.current.getMessage();
         //messageSampleCtrl.current.getMessage();
         imageDataController.step();
-        stateController.getMessage();
+        statusController.getMessage();
     });
 
     return {
@@ -87,7 +95,7 @@ export const createInitialState = () => {
         messageSampleController,
         imageDataController,
         worldController,
-        stateController,
+        statusController,
         hmi: {},
     };    
 }

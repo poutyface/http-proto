@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+
+message Position32f {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+
+
+message Status {
+    string debug = 1;
+    Position32f position = 2;
+}

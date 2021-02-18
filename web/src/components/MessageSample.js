@@ -17,7 +17,7 @@ export function MessageSampleControllerView(props) {
         <div>
         <button onClick={() => props.controller.getMessage("type1")}>Type1: Tx:JSON, Rx:JSON</button>        
         <button onClick={() => props.controller.getMessage("Position")}>Type2: position Tx:JSON, Rx:Proto</button>
-        <button onClick={() => props.controller.getMessage("Status")}>Type3: status Tx:JSON, Rx:Proto</button>
+        <button onClick={() => props.controller.getMessage("Debug")}>Type3: status Tx:JSON, Rx:Proto</button>
         <button onClick={() => props.controller.getMessage("")}>All</button>
         </div>
     );

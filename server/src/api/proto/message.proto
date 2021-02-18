@@ -2,8 +2,8 @@ syntax = "proto3";
 
 import "image.proto";
 
-message Status {
-    string status = 1;
+message Debug{
+    string value = 1;
 }
 
 message Position64i {
@@ -23,8 +23,8 @@ message Point2DInt {
     int64 y = 2;
 }
 
-message State {
-    Status status = 1;
+message Status {
+    Debug debug = 1;
     Position32f position = 2;
     Point2DInt chartData = 3;
 }
@@ -33,8 +33,8 @@ message Inbox {
     string type = 1;
     uint64 timestamp = 2;
     oneof Blob {
-        State state = 3;
-        Status status = 4;
+        Status status = 3;
+        Debug debug = 4;
         Position32f position = 5;
         ImageData image = 6;
         Point2DInt chartData = 7;

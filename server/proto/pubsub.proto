@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package pubsub;
+
+service Pubsub {
+    rpc CreateTopic (Topic) returns (Topic) {}
+    
+    rpc CreateSubscription (Subscription) returns (Subscription) {}
+
+    rpc DeleteSubscription (DeleteSubscriptionRequest) returns (Empty) {}
+
+    rpc Publish(PublishRequest) returns (PublishResponse) {}
+    
+    rpc Pull(PullRequest) returns (PullResponse) {}
+
+    rpc StreamingPull(StreamingPullRequest) returns (stream StreamingPullResponse) {}
+}
+
+message Empty {}
+
+message Topic {
+    string name = 1;
+}
+
+message Subscription {
+    string name = 1;
+    // topic name
+    string topic = 2;
+}
+
+message DeleteSubscriptionRequest {
+    string name = 1;
+}
+
+message PublishRequest {
+    // topic name 
+    string topic = 1;
+
+    PubsubMessage message = 2;
+}
+
+message PublishResponse {
+    string message_id = 1;
+}
+
+message PullRequest {
+    string subscription = 1;
+}
+
+message PullResponse {
+    PubsubMessage message = 1;
+}
+
+message StreamingPullRequest {
+    string subscription = 1;
+}
+
+message StreamingPullResponse {
+    PubsubMessage message = 1;
+}
+
+message PubsubMessage {
+    bytes data = 1;
+}

@@ -11,6 +11,10 @@ export class WebsocketEndpoint {
         this.handlers = {};
     }
     
+    close(){
+        this.websocket.close();
+    }
+
     connect(){
         try {
             this.websocket = new WebSocket(this.serverAddress);

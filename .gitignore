@@ -1,13 +1,14 @@
-/target
-/proto/src/*.rs
-/web/dist
-/web/node_modules
 .DS_Store
-package-lock.json
 Cargo.lock
-/web/src/proto_bundle.json
-/backend/assets
-
+target
+**/__pycache__
+**/proto/*.rs
+**/proto/*.py
+web/dist
+web/node_modules
+web/src/proto_bundle.json
+package-lock.json
+backend/assets
 
 
 
