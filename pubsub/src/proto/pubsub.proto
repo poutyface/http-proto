@@ -3,7 +3,7 @@ syntax = "proto3";
 package pubsub;
 
 service Pubsub {
-    rpc CreateTopic (Topic) returns (Topic) {}
+    //rpc CreateTopic (Topic) returns (Topic) {}
     
     rpc CreateSubscription (Subscription) returns (Subscription) {}
 

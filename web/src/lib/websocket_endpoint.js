@@ -1,7 +1,7 @@
 const protobuf = require('protobufjs/light');
 const protoBundle = require("proto_bundle.json");
 const protoRoot = protobuf.Root.fromJSON(protoBundle);
-const Inbox = protoRoot.lookupType("Inbox");
+const WSResponse = protoRoot.lookupType("WSResponse");
 
 
 export class WebsocketEndpoint {
@@ -26,6 +26,10 @@ export class WebsocketEndpoint {
 
         this.websocket.onclose = (event) => {
             console.log("Websocket close");
+            console.log("reconnect");
+            setTimeout(() => {
+                this.connect();
+            }, 1000);
         }
 
         this.websocket.onerror = (event) => {
@@ -43,16 +47,16 @@ export class WebsocketEndpoint {
                         }
                     }
                 } else {
-                    const message = Inbox.decode(new Uint8Array(event.data));
+                    const response = WSResponse.decode(new Uint8Array(event.data));
                     // To Object, Becase protobuf v3 don't sent a 0 value(default value).
-                    const inbox = Inbox.toObject(message, {
+                    const message = WSResponse.toObject(response, {
                         defaults: true,
                         enums: String,
                     });
-                    const messageType = inbox.type;
+                    const messageType = message.type;
                     if(this.handlers[messageType]){
                         for(const handler of this.handlers[messageType]){
-                            handler(inbox);
+                            handler(message);
                         }
                     }
                     

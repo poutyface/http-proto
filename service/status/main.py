@@ -3,7 +3,7 @@ import sys
 import time
 
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../../server/proto"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../pubsub/src/proto"))
 import grpc
 import pubsub_pb2
 import pubsub_pb2_grpc
@@ -19,7 +19,8 @@ if __name__ == "__main__":
 
         for i in range(0, 1000):
             status = status_pb2.Status()
-            status.debug = "status service debug {}".format(i)
+            status.timestamp = i
+            status.debug = "status service debug seq_num {}".format(i)
             status.position.CopyFrom(status_pb2.Position32f(x=float(i), y=float(i), z=0.0))
 
             #message = pubsub_pb2.PubsubMessage(data="Hello From Status Service {}".format(i).encode('utf-8'))

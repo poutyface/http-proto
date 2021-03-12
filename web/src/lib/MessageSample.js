@@ -15,15 +15,15 @@ export class MessageSampleController {
         this.textarea.cols = 80;
         this.textarea.rows = 5;
 
-        this.dataProvider.on('type1', (data) => {
+        this.dataProvider.on('Status/type1', (data) => {
             this.data.message = data;
             this.update(data);
         });
-        this.dataProvider.on('Position', (data) => {
+        this.dataProvider.on('Status/Position', (data) => {
             this.data.message = data;
             this.update(data);
         });
-        this.dataProvider.on('Debug', (data) => {
+        this.dataProvider.on('Status/Debug', (data) => {
             this.data.message = data;
             this.update(data);
         });
@@ -56,9 +56,9 @@ export class MessageSampleController {
 
     getMessage(type='') {
         if(type === ''){
-            this.dataProvider.sendData('type1', {timestamp: this.timestamp});
-            this.dataProvider.sendData('Position', {timestamp: this.timestamp});
-            this.dataProvider.sendData('Debug', {timestamp: this.timestamp});
+            this.dataProvider.sendData('Status/type1', {timestamp: this.timestamp});
+            this.dataProvider.sendData('Status/Position', {timestamp: this.timestamp});
+            this.dataProvider.sendData('Status/Debug', {timestamp: this.timestamp});
         } else {
             this.dataProvider.sendData(type, {timestamp:this.timestamp});
         }

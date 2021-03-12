@@ -1,39 +1,70 @@
-import React, { useState, useEffect, useRef, useCallback, useReducer, createContext, useContext } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useReducer, createContext, useContext, useMemo } from 'react';
 import ReactDOM, { render } from 'react-dom';
 
 import {MessageSampleView, MessageSampleControllerView} from 'components/MessageSample.js';
 import {LineChartView, LineChartControllerView}  from 'components/LineChart.js';
 import {ImageDataView, ImageDataControllerView} from 'components/ImageData.js';
 import {WorldView} from 'components/World.js';
-import {StateContext, reducer, initialState} from 'StateContext.js';
+import {AppContext, AppContextReducer, createAppContext} from 'StateContext.js';
 
+const appContextValue = createAppContext();
 
-function MainControls(props) {
-    const [isPlaying, setIsPlaying] = useState(props.controller.isPlaying);
+const MainControlContext = createContext();
+let mainControlContextValue = createMainControlContext(appContextValue.playbackController, appContextValue.messageSender);
 
-    const play = () => {
-        props.controller.start();
-        setIsPlaying(props.controller.isPlaying);
+function createMainControlContext(playbackController, messageSender) {
+    return {
+        playbackController: playbackController,
+        messageSender: messageSender,
+        capture: false,
+        realtime: true    
     };
+}
 
-    const stop = () => {
-        props.controller.stop();
-        setIsPlaying(props.controller.isPlaying);
-    };
+const MainControlReducer = (state, action) => {
+    switch(action.type) {
+        case 'PLAY':
+            state.playbackController.start();
+            return Object.assign({}, state);
+        case 'STEP':
+            state.playbackController.next();
+            return Object.assign({}, state);
+        case 'STOP':
+            state.playbackController.stop();
+            return Object.assign({}, state);
+        case 'CAPTURE':
+            state.messageSender.sendData("Status/Capture", {enable: action.enable});
+            return Object.assign({}, state, {capture: action.enable});    
+        case 'REALTIME':
+            state.messageSender.sendData("Status/Realtime", {enable: action.enable});
+            return Object.assign({}, state, {realtime: action.enable});    
+    }
+    return Object.assign({}, state);
+};
 
+function MainControl() {
+    const { state, dispatch } = useContext(MainControlContext);
+
+    return useMemo(() => {
+    console.log("MainControls");
     return (
         <>
-        <button onClick={() => props.controller.next()}>STEP WORLD</button>
-        {isPlaying 
-           ? <button onClick={() => stop()}>STOP WORLD</button>
-           : <button onClick={() => play()}>PLAY WORLD</button>
+        <input type="checkbox" id="capture" checked={state.capture} onChange={() => dispatch({type: "CAPTURE", enable: !state.capture})}></input>
+        <label htmlFor="capture">Capture</label>
+        <input type="checkbox" id="realtime" checked={state.realtime} onChange={() => dispatch({type: "REALTIME", enable: !state.realtime})}></input>
+        <label htmlFor="realtime">Realtime</label>
+        <button onClick={() => dispatch({type:"STEP"})}>STEP WORLD</button>
+        {state.playbackController.isPlaying 
+           ? <button onClick={() => dispatch({type:"STOP"})}>STOP WORLD</button>
+           : <button onClick={() => dispatch({type:"PLAY"})}>PLAY WORLD</button>
         }
         </>
-    );    
+    );
+    }, [state]);    
 }
 
 function MainView(props) {
-    const { state, dispatch } = useContext(StateContext);
+    const { state } = useContext(AppContext);
 
     console.log("MainView");
     console.log(state.playbackController.isPlaying);
@@ -44,19 +75,10 @@ function MainView(props) {
         }
     }, []);
 
-    const play = () => {
-        state.playbackController.start();
-        setIsPlaying(state.playbackController.isPlaying);
-    };
-
-    const stop = () => {
-        state.playbackController.stop();
-        setIsPlaying(state.playbackController.isPlaying);
-    };
 
     return (
         <div>
-        <MainControls controller={state.playbackController} />
+        <MainControl />
         <WorldView controller={state.worldController} />
         <div style={{display: 'flex', width: '100%'}}>
         <LineChartView controller={state.lineChartController} />
@@ -64,15 +86,28 @@ function MainView(props) {
         <MessageSampleView controller={state.messageSampleController} />
         <MessageSampleControllerView controller={state.messageSampleController} />
         </div>
-        <ImageDataView controller={state.imageDataController} />
-        <ImageDataControllerView controller={state.imageDataController} />
-
         </div>
     );
 }
 
+
+
 function ControlView(props){
-    return (<div />);
+    const { state, dispatch } = useContext(AppContext);
+
+    const executeCommand = (command) => {
+        state.commandExecuter.sendData(command, {});
+    };
+
+    return (
+        <div>
+            <button onClick={() => executeCommand("Command/Test")}>Command/Test</button>
+
+            <ImageDataView controller={state.imageDataController} />
+            <ImageDataControllerView controller={state.imageDataController} />
+
+        </div>
+    );
 }
 
 
@@ -85,14 +120,17 @@ function MainPanel(props) {
 }
 
 function App(props) {
-    const [state, dispatch] = useReducer(reducer, initialState);
+    const [state, dispatch] = useReducer(AppContextReducer, appContextValue);
+    const [mainControlContext, mainControlReducer] = useReducer(MainControlReducer, mainControlContextValue);
+
     const [mainView, setMainView] = useState(true);
 
 
     console.log("App");
     
     return (
-        <StateContext.Provider value={{state, dispatch}}>
+        <AppContext.Provider value={{state, dispatch}}>
+        <MainControlContext.Provider value={{state: mainControlContext, dispatch: mainControlReducer}} >
         <MainPanel key={state.appID} >
             { state.error && <div>state.error.message</div> }
             <button onClick={() => dispatch({type: 'RESET'})}>RESET</button>
@@ -103,7 +141,8 @@ function App(props) {
                 ? <MainView />
                 : <ControlView />}
         </MainPanel>
-        </StateContext.Provider>
+        </MainControlContext.Provider>
+        </AppContext.Provider>
     );
 }
 

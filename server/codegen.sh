@@ -4,10 +4,10 @@
 echo "generate rust code from .proto"
 protoc -I./src/api/proto --rust_out=./src/api/proto/ ./src/api/proto/*.proto
 proto_list="./src/api/proto/*.proto"
-rm -fr ./src/api/proto.rs
-touch ./src/api/proto.rs
+rm -fr ./src/api/proto/mod.rs
+touch ./src/api/proto/mod.rs
 for file in ${proto_list[@]}; do
-    echo "pub mod `basename ${file} .proto`;" >> ./src/api/proto.rs
+    echo "pub mod `basename ${file} .proto`;" >> ./src/api/proto/mod.rs
 done 
 
 # for js

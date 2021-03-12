@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback, useContext } from 'react';
 
 export function ImageDataView(props) {
     const canvasEl = useRef();
@@ -7,9 +7,12 @@ export function ImageDataView(props) {
         canvasEl.current.appendChild(props.controller.canvas);
     }, [props.controller]);
 
-    return (
-        <div ref={canvasEl} />
-    );
+    return useMemo(() => {
+        console.log("ImageDataView");
+        return (
+            <div ref={canvasEl} />
+        );
+    }, [props.controller]);
 }
 
 function StreamButton(props) {
@@ -25,19 +28,21 @@ function StreamButton(props) {
         setIsStreaming(props.controller.isStreaming);
     }
 
-    return (
-        <>
-        {isStreaming
-            ? <button onClick={() => stopStream()}>stop</button>
-            : <button onClick={() => startStream()}>stream</button>}
-        </>
-    );
+    return useMemo(() => {
+        console.log("StreamButton");
+        return (
+            <>
+            {isStreaming
+                ? <button onClick={() => stopStream()}>stop</button>
+                : <button onClick={() => startStream()}>stream</button>}
+            </>
+        );
+    }, [isStreaming]);
 }
 
 function PlayButton(props){
     const [isPlaying, setIsPlaying] = useState(props.controller.playback.isPlaying);
-    console.log("PlayButton");
-
+    
     const start = () => {
         props.controller.start();
         setIsPlaying(props.controller.playback.isPlaying);
@@ -48,24 +53,29 @@ function PlayButton(props){
         setIsPlaying(props.controller.playback.isPlaying);
     }
     
-    return (
-        <>
-        {isPlaying
-            ? <button onClick={() => stop()}>stop</button>
-            : <button onClick={() => start()}>play</button>}        
-        </>
-    );
+    return useMemo(() => {
+        console.log("PlayButton");
+        return (
+            <>
+            {isPlaying
+                ? <button onClick={() => stop()}>stop</button>
+                : <button onClick={() => start()}>play</button>}        
+            </>
+        );
+    }, [isPlaying]);
 }
 
 export function ImageDataControllerView(props) {
-
-    return (
-        <div>
-        <StreamButton controller={props.controller} />
-        <PlayButton controller={props.controller} />
-        <button onClick={() => props.controller.seek(1)}>reset</button>
-        <button onClick={() => props.controller.step()}>step</button>
-        <button onClick={() => props.controller.back()}>back</button>
-        </div>
-        );    
+    return useMemo(() => {
+        console.log("ImageDataControllerView");
+        return (
+            <div>
+            <StreamButton controller={props.controller} />
+            <PlayButton controller={props.controller} />
+            <button onClick={() => props.controller.seek(1)}>reset</button>
+            <button onClick={() => props.controller.step()}>step</button>
+            <button onClick={() => props.controller.back()}>back</button>
+            </div>
+            );    
+    }, [props.controller]);
 }

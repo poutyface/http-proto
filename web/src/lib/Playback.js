@@ -1,11 +1,14 @@
 export class Playback {
     constructor() {
-        this.timestamp = -1;
+        this.timestamp = 0;
         this.reset();
     }
 
     seek(timestamp){
         this.timestamp = timestamp - 1;
+        if(this.timestamp < 0){
+            this.timestamp = 0;
+        }
     }
 
     next(){
@@ -14,12 +17,12 @@ export class Playback {
     }
 
     back(){
-        this.timestamp -= 1;
+        this.seek(this.timestamp - 1);
         return this.timestamp;
     }
 
     reset(){
-        this.timestamp = -1;
+        this.timestamp = 0;
     }
 }
 

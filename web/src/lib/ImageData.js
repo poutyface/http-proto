@@ -25,7 +25,7 @@ export class RemoteImageDataProvider {
     
     on(handler){
         this.handler = handler;
-        this.ws.on('Image', (data) => {
+        this.ws.on('Image/Image', (data) => {
             this.cacheStore[data.timestamp] = data;
             if(this.handler){
                 this.handler(data);
@@ -34,7 +34,7 @@ export class RemoteImageDataProvider {
     }
     
     getMessage(message, scale=1.0, timestamp=-1){
-        if(message === 'Image' && timestamp in this.cacheStore){
+        if(message === 'Image/Image' && timestamp in this.cacheStore){
             console.log(timestamp);
             this.handler(this.cacheStore[timestamp]);
         } else {
@@ -56,9 +56,9 @@ export class ImageDataController {
 
         this.playback.on((timestamp) => {
             if(this.isStreaming){
-                this.dataProvider.getMessage("StreamImage", this.scale, timestamp);
+                this.dataProvider.getMessage("Image/StreamImage", this.scale, timestamp);
             } else {
-                this.dataProvider.getMessage("Image", this.scale, timestamp);
+                this.dataProvider.getMessage("Image/Image", this.scale, timestamp);
             }
         });
 
@@ -94,7 +94,7 @@ export class ImageDataController {
     
     stopStream(){
         this.isStreaming = false;
-        this.dataProvider.getMessage("StopStreamImage");
+        this.dataProvider.getMessage("Image/StopStreamImage");
     }
 
     start() {

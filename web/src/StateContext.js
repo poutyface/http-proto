@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext } from 'react';
 
 import { MessageSampleController, MessageController } from 'lib/MessageSample.js';
 import { LineChartController }  from 'lib/LineChart.js';
@@ -8,8 +8,6 @@ import { PlaybackController } from 'lib/Playback.js';
 import { WorldController } from 'lib/World.js';
 import { WebsocketEndpoint } from 'lib/websocket_endpoint.js';
 
-export const StateContext = createContext();
-
 const config = {
     stateServiceURI: 'ws://127.0.0.1:4567/ws',
     imageServiceURI: 'ws://127.0.0.1:4567/image_service',
@@ -17,7 +15,7 @@ const config = {
 };
 
 
-export const createInitialState = () => {
+export const createAppContext = () => {
     const dataProvider = new WebsocketEndpoint(config.stateServiceURI);
     try{
         dataProvider.connect();
@@ -28,7 +26,11 @@ export const createInitialState = () => {
         };
     }
 
-    const lineChartController = new LineChartController('ChartPosition', 'timestamp', 'pos', dataProvider);
+    const commandExecuter = dataProvider;
+
+    const messageSender = dataProvider;
+
+    const lineChartController = new LineChartController('Status/ChartPosition', 'timestamp', 'pos', dataProvider);
     const messageSampleController = new MessageSampleController(dataProvider);
 
     const imageDataProvider = new RemoteImageDataProvider(config.imageServiceURI, config.imageResource);
@@ -53,10 +55,10 @@ export const createInitialState = () => {
 
     const worldController = new WorldController();
     
-    const statusController = new MessageController('Status', dataProvider);
+    const statusController = new MessageController('Status/Status', dataProvider);
     statusController.on((inbox) => {
         const status = inbox.status;
-        console.log(inbox);
+        //console.log(inbox);
         if(status.position){
             messageSampleController.update(status.position);
         }
@@ -96,22 +98,27 @@ export const createInitialState = () => {
         imageDataController,
         worldController,
         statusController,
-        hmi: {},
+        commandExecuter,
+        messageSender,
+        captureMode: false,
+        realtime: true,
+        hmi: {
+        },
     };    
 }
 
-export const initialState = createInitialState();
 
 const reset = (state) => {
     state.playbackController.reset();
-    state.playbackController.seek(1);
+    state.playbackController.seek(0);
     
     state.imageDataController.reset();
-    state.imageDataController.seek(1);
+    state.imageDataController.seek(0);
 };
 
+export const AppContext = createContext();
 
-export const reducer = (state, action) => {
+export const AppContextReducer = (state, action) => {
     switch(action.type) {
         case 'ERROR':
             return Object.assign({}, state, {error: action.error});

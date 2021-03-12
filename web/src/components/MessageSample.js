@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext, createElement} from 'react';
+import React, { useState, useMemo, useEffect, useRef, useContext, createElement} from 'react';
 
 export function MessageSampleView(props) {
     const textAreaEl = useRef();
@@ -7,18 +7,24 @@ export function MessageSampleView(props) {
         textAreaEl.current.appendChild(props.controller.textarea);
     }, [props.controller]);
 
-    return (
-        <div ref={textAreaEl} />
-    );
+    return useMemo(() => {
+        console.log("MessageSampleView");
+        return (
+            <div ref={textAreaEl} />
+        );
+    }, [props.controller]);
 }
 
 export function MessageSampleControllerView(props) {
-    return (
-        <div>
-        <button onClick={() => props.controller.getMessage("type1")}>Type1: Tx:JSON, Rx:JSON</button>        
-        <button onClick={() => props.controller.getMessage("Position")}>Type2: position Tx:JSON, Rx:Proto</button>
-        <button onClick={() => props.controller.getMessage("Debug")}>Type3: status Tx:JSON, Rx:Proto</button>
-        <button onClick={() => props.controller.getMessage("")}>All</button>
-        </div>
-    );
+    return useMemo(() => {
+        console.log("MessageSampleControllerView");
+        return (
+            <div>
+            <button onClick={() => props.controller.getMessage("Status/type1")}>Type1: Tx:JSON, Rx:JSON</button>        
+            <button onClick={() => props.controller.getMessage("Status/Position")}>Type2: position Tx:JSON, Rx:Proto</button>
+            <button onClick={() => props.controller.getMessage("Status/Debug")}>Type3: status Tx:JSON, Rx:Proto</button>
+            <button onClick={() => props.controller.getMessage("")}>All</button>
+            </div>
+        );
+    }, [props.controller]);
 }
