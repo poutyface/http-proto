@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     
     // For other language to generate proto
-    Command::new("python3").arg("./src/proto/codegen.py").status().expect("codegen proto");
+    Command::new("python3").arg("./codegen.py").status().expect("codegen proto");
     
     Ok(())
 }
