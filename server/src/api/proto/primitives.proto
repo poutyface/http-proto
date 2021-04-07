@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+//package primitives;
+
+message Text {
+    string text = 1;
+}
+
+message Image {
+    // image data
+    bytes data = 1;
+    // image/jpeg, image/png
+    string mime_type = 2;
+}
+
+message Point2d {
+    float x = 1;
+    float y = 2;
+}
+
+message Point3d {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+

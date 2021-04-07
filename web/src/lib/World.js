@@ -77,12 +77,20 @@ class WorldRenderer {
         this.renderer.render(this.scene, this.camera);
     }
 
+    drop(){
+        this.renderer = null;
+    }
+
     update(data){
+        if(this.renderer === null){
+            return;
+        }
+
         this.mesh.scale.set(4.933, 2.11, 1.48);
         
         
-        this.mesh.position.x = data.position.x * 0.01;
-        this.mesh.position.y = data.position.y * 0.01;
+        this.mesh.position.x = data.point3d.x * 0.1;
+        this.mesh.position.y = data.point3d.y * 0.1;
         
         /*
         //this.mesh.position.z = data.position.z;
@@ -110,6 +118,9 @@ class WorldRenderer {
     }
 
     mouseWheeled(deltaX, deltaY){
+        if(this.renderer === null){
+            return;
+        }
         /*
         if(deltaY < 0){
             this.camera.position.z += 10.0;
@@ -132,6 +143,10 @@ export class WorldController {
 
     update(data){
         this.renderer.update(data);
+    }
+
+    drop(){
+        this.renderer.drop();
     }
 }
 

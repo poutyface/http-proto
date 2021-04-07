@@ -13,3 +13,4 @@ message Status {
     Position32f position = 2;
     string debug = 3;
 }
+

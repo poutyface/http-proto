@@ -60,5 +60,8 @@ message StreamingPullResponse {
 }
 
 message PubsubMessage {
-    bytes data = 1;
+    // In Milliseconds
+    uint64 timestamp = 1;
+    // contents
+    bytes data = 2;
 }

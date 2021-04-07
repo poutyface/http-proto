@@ -289,7 +289,7 @@ impl PubsubContext {
                 };
     
                 let mut messages = sub.messages.lock().await;
-                if messages.len() > 10 {
+                if messages.len() > 100 {
                     continue;
                 }
     
@@ -522,6 +522,7 @@ mod tests {
             .publish(
                 topic_1,
                 rpc::PubsubMessage {
+                    timestamp: 0,
                     data: "topic_1 message".as_bytes().to_owned(),
                 },
             )
@@ -555,6 +556,7 @@ mod tests {
                 .publish(
                     topic_1,
                     rpc::PubsubMessage {
+                        timestamp: 0,
                         data: format!("topic_1 message {}", i).as_bytes().to_owned(),
                     },
                 )
@@ -650,6 +652,7 @@ mod tests {
         // publish message
         for i in 0..2 as i32 {
             let message = rpc::PubsubMessage {
+                timestamp: 0,
                 data: format!("Hello {}", i).as_bytes().to_owned(),
             };
             let _res = service.ctx.publish(topic_1, message).await;

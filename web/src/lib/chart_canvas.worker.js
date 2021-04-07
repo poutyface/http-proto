@@ -15,6 +15,18 @@ self.addEventListener('message', (event) => {
         return;
     }
 
+    if (event.data.type == 'drop'){
+        if(chart != null){
+            chart.destroy();
+            chart = null;
+        }
+        return;
+    }
+
+    if (chart == null){
+        return;
+    }
+
     chart.data.labels = event.data.data.x;
     chart.data.datasets[0].data = event.data.data.y;
     chart.update();

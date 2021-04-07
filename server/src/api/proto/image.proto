@@ -1,5 +1,0 @@
-syntax = "proto3";
-
-message ImageData {
-    bytes image = 1;
-}

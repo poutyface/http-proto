@@ -1,84 +1,181 @@
-import {Playback, PlaybackController} from 'lib/Playback.js';
-import { WebsocketEndpoint } from 'lib/websocket_endpoint.js';
+import { Playback } from 'lib/Player.js';
+import { BlockCacheDataProvider } from 'lib/MessageSample.js';
 import Worker from 'lib/image_canvas.worker.js';
+import { createRequest, protobufRoot, delay } from 'lib/utils.js';
+const { v4: uuidv4 } = require('uuid');
 
-export class RemoteImageDataProvider {
-    constructor(address, resource){
-        this.address = address;
-        this.resource = resource;
-        this.ws = new WebsocketEndpoint(this.address);
-        this.cacheStore = {};
-        this.handler = null;
+const RequestImage = protobufRoot.lookupType("RequestImage");
+const RequestStreamImage = protobufRoot.lookupType("RequestStreamImage");
+const RequestStopStreamImage = protobufRoot.lookupType("RequestStopStreamImage");
+
+
+export class RemoteImageDataProvider extends BlockCacheDataProvider {
+    // ws: image data service [WebSocketEndpoint]
+    constructor(imageService){
+        super(imageService);
     }
 
-    connect(){
-        try {
-            this.ws.connect();
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    close(){
-        this.ws.close();
-    }
-    
-    on(handler){
-        this.handler = handler;
-        this.ws.on('Image/Image', (data) => {
-            this.cacheStore[data.timestamp] = data;
-            if(this.handler){
-                this.handler(data);
-            }
+    startStream(client_id, subject, scale = 1.0, timestamp = 1) {
+        let message = createRequest(RequestStreamImage, {
+            client_id: client_id,
+            resource: subject,
+            start_time: timestamp,
+            scale_x: scale,
+            scale_y: scale
         });
+
+        this._listen(message.header.path);
+
+        this.ws.sendMessage(message);
     }
-    
-    getMessage(message, scale=1.0, timestamp=-1){
-        if(message === 'Image/Image' && timestamp in this.cacheStore){
-            console.log(timestamp);
-            this.handler(this.cacheStore[timestamp]);
-        } else {
-            if(timestamp === -1){
-                this.ws.sendData(message, {});
-            } else{
-                this.ws.sendData(message, {resource: this.resource, timestamp: timestamp, scale_x: scale, scale_y: scale});
-            }
-        }
+
+    stopStream(client_id) {
+        let message = createRequest(RequestStopStreamImage, { client_id: client_id });
+        this.ws.sendMessage(message);
     }
 }
 
+
+class TimeSerieseRequestCreator {
+    getSubject(){
+        throw new Error("not impl");
+    }
+
+    createRequest(startTime, endTime){
+        throw new Error("not impl");
+    }
+}
+
+class RequestImageDataCreator extends TimeSerieseRequestCreator {
+    constructor(subject, scale) {
+        super();
+
+        this.subject = subject;
+        this.scale = scale;
+    }
+
+    // must
+    getSubject() {
+        return this.subject;
+    }
+
+    // must
+    createRequest(startTime, endTime) {
+        let message = createRequest(RequestImage, {
+            start_time: startTime,
+            end_time: endTime,
+            resource: this.subject,
+            scale_x: this.scale,
+            scale_y: this.scale
+        });
+
+        return message;
+    }
+}
+
+
 export class ImageDataController {
-    constructor(dataProvider){
-        this.dataProvider = dataProvider;
-        this.playback = new PlaybackController();
+    /*
+    call drop() before instance is dorpped
+
+    subject: image data resource name
+    imageDataProvider: RemoteImageDataProvider
+    */
+    constructor(subject, imageDataProvider) {
+        this.subject = subject;
+        this.dataProvider = imageDataProvider;
+        this.requestCreator = new RequestImageDataCreator(this.subject, 1.0);
+        this.worker = new Worker();
+        this.canvas = document.createElement("canvas");
+        const offscreen = this.canvas.transferControlToOffscreen();
+        this.worker.postMessage({ type: "initialize", canvas: offscreen }, [offscreen]);
+    }
+
+    setScale(scale) {
+        this.requestCreator = new RequestImageDataCreator(this.subject, scale);
+    }
+
+    getDataProvider() {
+        return this.dataProvider;
+    }
+
+    getStreamBuffer() {
+        return this.dataProvider.getStreamBuffer();
+    }
+
+    drop() {
+        this.worker.postMessage({ type: "drop" });
+        this.worker.terminate();
+    }
+
+    async get(timestamp = { startTime: 0, endTime: 0 }) {
+        let images = await this.dataProvider.get(this.requestCreator, timestamp);
+        return images;
+    }
+
+    async _render(data) {
+        this.worker.postMessage({ type: "render", inbox: data });
+    }
+
+    render(data) {
+        this._render(data);
+    }
+}
+
+
+export class ImageDataStreamController {
+    /*
+    call drop() when instance is dorpped
+
+    subject: image data resource name
+    imageDataProvider: RemoteImageDataProvider
+    */
+    constructor(subject, imageDataProvider) {
+        this.subject = subject;
+        this.client_id = uuidv4();
+        this.dataProvider = imageDataProvider;
+        this.playback = new Playback();
         this.isStreaming = false;
         this.scale = 1.0;
 
-        this.playback.on((timestamp) => {
-            if(this.isStreaming){
-                this.dataProvider.getMessage("Image/StreamImage", this.scale, timestamp);
-            } else {
-                this.dataProvider.getMessage("Image/Image", this.scale, timestamp);
-            }
-        });
-
         this.worker = new Worker();
         this.worker.addEventListener('message', (event) => {
-            if(this.isStreaming){
-                this.playback.seek(event.data.timestamp);
-            }
+            this.playback.seek(event.data.timestamp);
         });
 
         this.canvas = document.createElement("canvas");
         const offscreen = this.canvas.transferControlToOffscreen();
-        this.worker.postMessage({type: "initialize", canvas: offscreen}, [offscreen]);
+        this.worker.postMessage({ type: "initialize", canvas: offscreen }, [offscreen]);
 
-        this.dataProvider.on((data) => {
-            this.worker.postMessage({type: "render", inbox: data});
-        });
+        this.callback = (subject, item) => {
+            //console.log("stream recieve:", item.timestamp);
+            if (subject === this.subject) {
+                this._render(item);
+            } else {
+                this.playback.seek(item.timestamp);
+            }
+        };
+        this.dataProvider.on(this.callback);
     }
 
-    reset(){
+    setScale(scale) {
+        this.scale = scale;
+    }
+
+    async _render(item) {
+        this.worker.postMessage({ type: "render", inbox: item });
+    }
+
+    drop() {
+        if (this.isStreaming) {
+            this.stopStream();
+        }
+        this.dataProvider.off(this.callback);
+        this.worker.postMessage({ type: "drop" });
+        this.worker.terminate();
+    }
+
+    reset() {
         this.playback.reset();
         this.isStreaming = false;
     }
@@ -87,30 +184,16 @@ export class ImageDataController {
         this.playback.seek(timestamp);
     }
 
-    startStream(){
+    startStream() {
         this.isStreaming = true;
-        this.playback.next();
+        this.dataProvider.startStream(this.client_id, this.subject, this.scale, this.playback.getCurrentTime());
+        return this.isStreaming;
     }
-    
-    stopStream(){
+
+    stopStream() {
         this.isStreaming = false;
-        this.dataProvider.getMessage("Image/StopStreamImage");
-    }
-
-    start() {
-        this.playback.start();
-    }
-
-    stop(){
-        this.playback.stop();
-    }
-
-    step(){
-        this.playback.next();
-    }
-
-    back(){
-        this.playback.back();
+        this.dataProvider.stopStream(this.client_id);
+        return this.isStreaming;
     }
 }
 

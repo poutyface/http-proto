@@ -1,42 +1,115 @@
 syntax = "proto3";
 
-import "image.proto";
+import "google/protobuf/descriptor.proto";
+import "google/protobuf/any.proto";
+//import "image.proto";
 
-message Debug{
-    string value = 1;
+import "primitives.proto";
+
+// Request
+extend google.protobuf.MessageOptions {
+    string path = 54200;
+    string response_type = 54201;
+    string response_schema = 54202;
 }
 
-message Position64i {
-    int64 x = 1;
-    int64 y = 2;
-    int64 z = 3;
+
+message RequestHeader {
+    string path = 1;
 }
 
-message Position32f {
-    float x = 1;
-    float y = 2;
-    float z = 3;
+
+message RequestCommandRecord {
+    option (path) = "Command/Record";
+    RequestHeader header = 1;
+    bool enable = 2;
 }
 
-message Point2DInt {
-    int64 x = 1;
-    int64 y = 2;
+message RequestStatus {
+    option (path) = "Status/Status";
+    option (response_type) = "Stream";
+    option (response_schema) = "Status";
+    RequestHeader header = 1;
+    uint64 start_time = 2;
+    uint64 end_time = 3;
 }
+
+/*
+// [deprecated]
+message RequestStatusRecord {
+    option (path) = "Status/Record";
+    RequestHeader header = 1;
+    bool enable = 2;
+}
+*/
+
+message RequestStatusLive {
+    option (path) = "Status/Live";
+    RequestHeader header = 1;
+    bool enable = 2;
+}
+
+message RequestImage {
+    option (path) = "Image/Image";
+    option (response_type) = "Stream";
+    option (response_schema) = "ImageData";
+    RequestHeader header = 1;
+    uint64 start_time = 2;
+    uint64 end_time = 3;
+    string resource = 4;
+    float scale_x = 5;
+    float scale_y = 6;
+}
+
+message RequestStreamImage {
+    option (path) = "Image/StreamImage";
+    option (response_type) = "Stream";
+    option (response_schema) = "ImageData";
+    RequestHeader header = 1;
+    uint64 start_time = 2;
+    string resource = 3;
+    float scale_x = 4;
+    float scale_y = 5;
+    string client_id = 6;
+}
+
+message RequestStopStreamImage {
+    option (path) = "Image/StopStreamImage";
+    RequestHeader header = 1;
+    string client_id = 2;
+}
+
 
 message Status {
-    Debug debug = 1;
-    Position32f position = 2;
-    Point2DInt chartData = 3;
+    Text text = 1;
+    Point3d point3d = 2;
+    Point2d point2d = 3;
 }
 
-message WSResponse {
-    string type = 1;
-    uint64 timestamp = 2;
-    oneof Blob {
-        Status status = 3;
-        Debug debug = 4;
-        Position32f position = 5;
-        ImageData image = 6;
-        Point2DInt chartData = 7;
+
+message Stream {
+    string path = 1;
+    string subject = 2;
+    uint64 start_time = 3;
+    uint64 end_time = 4;
+    repeated StreamSet items = 5;
+}
+
+message StreamSet {
+    uint64 timestamp = 1;
+    oneof Schema {
+        Status status = 2;
+        Text text = 3;
+        Point2d point2d = 4;
+        Point3d point3d = 5;
+        Image image = 6;
     }
 }
+
+
+message WSResponse {
+    string path = 1;
+    // Stream, ...
+    google.protobuf.Any data = 2;
+}
+

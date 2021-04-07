@@ -1,15 +1,11 @@
 import Worker from 'lib/chart_canvas.worker.js';
 
 export class LineChartController {
-    constructor(dataName, axisX, axisY, dataProvider) {
-        this.dataName = dataName;
+    constructor(title, axisX, axisY) {
+        this.dataName = title;
         this.axisX = axisX;
         this.axisY = axisY;
-        this.dataProvider = dataProvider;
-        this.timestamp = 0;
         this.data = {x:[], y:[]};
-        this.plotData = [[-1,0],[0,0]];
-        this.handler = null;
 
         const config = {
             type: 'line',
@@ -26,7 +22,7 @@ export class LineChartController {
                 }],
             },
             options: {
-                title: {display: true, text: dataName},
+                title: {display: true, text: this.dataName},
                 responsive: false,
                 maintainAspectRatio: false,
                 animation: false,
@@ -61,19 +57,11 @@ export class LineChartController {
         const offscreen = this.canvas.transferControlToOffscreen();
         this.worker.postMessage({type: "initialize", config: config, canvas: offscreen}, [offscreen]);
 
-        this.dataProvider.on(this.dataName, (data) => {
-            this._prepareData(data.chartData);
-            this.worker.postMessage({type: "render", data: this.data});
-        });
     }
 
-    setTimestamp(timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    getMessage() {
-        this.dataProvider.sendData(this.dataName, {timestamp: this.timestamp});
-        this.timestamp += 1;
+    drop(){
+        this.worker.postMessage({type: "drop"});
+        this.worker.terminate();
     }
 
     _prepareData(data){
@@ -81,8 +69,8 @@ export class LineChartController {
             this.data.x.shift();
             this.data.y.shift();
         }
-        this.data.x.push(data.x);
-        this.data.y.push(data.y);
+        this.data.x.push(data.x.toFixed(2));
+        this.data.y.push(data.y.toFixed(2));
     }
 
     update(data) {
@@ -90,7 +78,4 @@ export class LineChartController {
         this.worker.postMessage({type: "render", data: this.data});
     }
 
-    getDataName() {
-        return this.dataName;
-    }
 }
