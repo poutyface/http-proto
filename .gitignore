@@ -2,11 +2,8 @@
 Cargo.lock
 target
 **/__pycache__
-**/proto/*.rs
-**/proto/*.py
 web/dist
 web/node_modules
-web/src/proto_bundle.json
 package-lock.json
 backend/assets
 
