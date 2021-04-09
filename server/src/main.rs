@@ -8,7 +8,7 @@ use protobuf::Message as _;
 use protobuf::well_known_types::Any;
 use serde_json::{self, json};
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock, Mutex};
+use std::sync::{Arc, RwLock};
 use std::time;
 use pubsub::pubsub_service;
 
@@ -23,14 +23,14 @@ mod service_status;
 macro_rules! ws_response_stream {
     ($name: expr, $subject: expr, $start_time: expr, $end_time: expr, $items: expr) => {
         {
-            let mut stream = api::proto::message::Stream::new();
+            let mut stream = api::proto::response::Stream::new();
             stream.set_path($name.to_string());
             stream.set_subject($subject.to_string());
             stream.set_start_time($start_time);
             stream.set_end_time($end_time);
             stream.set_items($items.into());
             
-            let mut res = api::proto::message::WSResponse::new();
+            let mut res = api::proto::response::WSResponse::new();
             res.set_path($name.to_string());
             res.set_data(Any::pack(&stream).unwrap());
             res
@@ -40,7 +40,7 @@ macro_rules! ws_response_stream {
 
 
 
-impl api::proto::message::WSResponse {
+impl api::proto::response::WSResponse {
     fn send<A>(self, ctx: &mut ws::WebsocketContext<A>)
     where 
         A: Actor<Context = ws::WebsocketContext<A>>
@@ -127,7 +127,7 @@ impl Actor for WebsocketGateway {
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct SendWSResponse {
-    response: api::proto::message::WSResponse,
+    response: api::proto::response::WSResponse,
 }
 
 
@@ -167,11 +167,11 @@ pub trait WebsocketResponder {
 
 pub struct CommandService{
     pubsub: Arc<RwLock<pubsub_service::Client>>,
-    message_provider: Arc<Mutex<PubsubMessageProvider>>, 
+    message_provider: Arc<RwLock<PubsubMessageProvider>>, 
 }
 
 impl CommandService{
-    async fn new(pubsub_address: String, message_provider: Arc<Mutex<PubsubMessageProvider>>) -> Self {
+    async fn new(pubsub_address: String, message_provider: Arc<RwLock<PubsubMessageProvider>>) -> Self {
         let pubsub = Arc::new(RwLock::new(
             pubsub_service::Client::connect(pubsub_address)
                 .await
@@ -203,7 +203,7 @@ impl WebsocketResponder for CommandService {
             Some("Command/Record") => {
                 let enable: bool = params["enable"].as_bool().unwrap_or(false);
                 println!("Command/Record {}", enable);
-                self.message_provider.lock().unwrap().enable_record(enable);
+                self.message_provider.read().unwrap().enable_record(enable);
             }
             _ => {}
         }
@@ -218,19 +218,18 @@ impl WebsocketResponder for CommandService {
             let _res = pubsub.write().unwrap().close().await;
         };
         let task = actix::fut::wrap_future(task);
-
         ctx.wait(task);
     }
 }
 
 
 pub struct StatusService {
-    message_provider: Arc<Mutex<PubsubMessageProvider>>, 
+    message_provider: Arc<RwLock<PubsubMessageProvider>>, 
     live: bool
 }
 
 impl StatusService {
-    async fn new(message_provider: Arc<Mutex<PubsubMessageProvider>>) -> Result<Self, String> {
+    async fn new(message_provider: Arc<RwLock<PubsubMessageProvider>>) -> Result<Self, String> {
         Ok(Self {
             message_provider,
             live: true,
@@ -239,6 +238,10 @@ impl StatusService {
 
     pub fn enable_live(&mut self, enable: bool){
         self.live = enable;
+    }
+
+    fn get_message(&self, topic: &str, timestamp: Option<u64>) -> Option<pubsub::proto::pubsub::PubsubMessage>{
+        self.message_provider.read().unwrap().get(topic, timestamp)
     }
 } 
 
@@ -257,10 +260,12 @@ impl WebsocketResponder for StatusService {
         let start_time: u64 = params["start_time"].as_u64().unwrap_or(0);
         let end_time: u64 = params["end_time"].as_u64().unwrap_or(0);
 
-        let mod_start_time = if self.live {
-            end_time
+            
+        let timestamps = if self.live {
+            // one shot
+            vec![end_time]
         } else {
-            start_time
+            self.message_provider.read().unwrap().collect_timestamps("status/status", start_time, end_time)
         };
 
         match params["header"]["path"].as_str() {
@@ -289,19 +294,18 @@ impl WebsocketResponder for StatusService {
             }
             Some("Status/Status") => {
                 let mut items = Vec::new();
-                for timestamp in (mod_start_time..=end_time).step_by(1) {
+            
+                for timestamp in timestamps {
 
-                    let timestamp = if self.live { None } else { Some(timestamp) };
-                    let message = {
-                        self.message_provider.lock().unwrap().get("/status/status", timestamp)
-                    };
+                    let timestamp = (!self.live).then(|| timestamp);
+                    let message = self.get_message("/status/status", timestamp);
                     let _ = message.map(|msg| {
                         // convert PubsubMessage.data to Status proto
                         let res: protobuf::ProtobufResult<service_status::Status> =
                             protobuf::Message::parse_from_bytes(&msg.data);
 
                         if let Ok(data) = res {                   
-                            let mut status = api::proto::message::Status::new();
+                            let mut status = api::proto::response::Status::new();
     
                             // Position
                             let mut point3d = api::proto::primitives::Point3d::new();
@@ -322,7 +326,7 @@ impl WebsocketResponder for StatusService {
                             point2d.set_y(pos.y as f32);
                             status.set_point2d(point2d);
     
-                            let mut streamset = api::proto::message::StreamSet::new();
+                            let mut streamset = api::proto::response::StreamSet::new();
                             streamset.set_timestamp(data.timestamp);
                             streamset.set_status(status);
                             items.push(streamset);
@@ -334,13 +338,10 @@ impl WebsocketResponder for StatusService {
             }
             Some("Status/Debug") => {
                 let mut items = Vec::new();
-                for timestamp in (mod_start_time..=end_time).step_by(1) {
+                for timestamp in timestamps {
+                    let timestamp = (!self.live).then(|| timestamp);
 
-                    let timestamp = if self.live { None } else { Some(timestamp) };
-
-                    let message = {
-                        self.message_provider.lock().unwrap().get("/status/status", timestamp)
-                    };
+                    let message = self.get_message("/status/status", timestamp);
                     let _ = message.map(|msg| {
                         // convert PubsubMessage.data to Status proto
                         let res: protobuf::ProtobufResult<service_status::Status> =
@@ -350,11 +351,10 @@ impl WebsocketResponder for StatusService {
                             let mut debug = api::proto::primitives::Text::new();
                             debug.set_text(data.debug);
 
-                            let mut streamset = api::proto::message::StreamSet::new();
+                            let mut streamset = api::proto::response::StreamSet::new();
                             streamset.set_timestamp(data.timestamp);
                             streamset.set_text(debug);
                             items.push(streamset);
-
                         }
                     });
                 }
@@ -408,9 +408,7 @@ pub struct Image {
 impl Image {
     pub fn new(path: String) -> Self {
         let reader = image::io::Reader::open(path);
-
         let image = reader.ok().and_then(|reader| reader.decode().ok());
-
         Self { data: image }
     }
 
@@ -418,7 +416,6 @@ impl Image {
         self.data = self.data.map(|image| {
             let width = (scale_width * image.width() as f64) as u32;
             let height = (scale_height * image.height() as f64) as u32;
-
             image.resize(width, height, image::imageops::FilterType::Nearest)
         });
 
@@ -427,7 +424,7 @@ impl Image {
 }
 
 pub struct ImageService {
-    message_provider: Arc<Mutex<PubsubMessageProvider>>,
+    message_provider: Arc<RwLock<PubsubMessageProvider>>,
     spawn_handle: HashMap<String, actix::SpawnHandle>,
 }
 
@@ -460,7 +457,7 @@ impl ImageService {
     }
 
     pub fn prepare_image_proto_from_imagedata(
-        message_provider: Arc<Mutex<PubsubMessageProvider>>, 
+        message_provider: &Arc<RwLock<PubsubMessageProvider>>, 
         resource_name: &str,
         timestamp: Option<u64>,
         scale_x: f64,
@@ -469,7 +466,7 @@ impl ImageService {
     {
 
         let message = { 
-            message_provider.lock().unwrap().get(resource_name, timestamp)
+            message_provider.read().unwrap().get(resource_name, timestamp)
         };
 
         let image = 
@@ -507,6 +504,7 @@ impl ImageService {
                     })               
             });
 
+        
         match res {
             Ok(image_proto) => Some(image_proto),
             Err(err) => {
@@ -519,9 +517,9 @@ impl ImageService {
     pub fn build_streamset(
         timestamp: u64,
         image_proto: api::proto::primitives::Image)
-     -> api::proto::message::StreamSet
+     -> api::proto::response::StreamSet
     {
-        let mut streamset = api::proto::message::StreamSet::new();
+        let mut streamset = api::proto::response::StreamSet::new();
         streamset.set_timestamp(timestamp);
         streamset.set_image(image_proto);
         return streamset;
@@ -554,21 +552,20 @@ impl WebsocketResponder for ImageService {
             Some("Image/Image") => {
                 let mut items = Vec::new();
 
-                for timestamp in start_time..=end_time{
+                let timestamps = {
+                    self.message_provider.read().unwrap().collect_timestamps(&resource_name, start_time, end_time)
+                };
+
+                for timestamp in timestamps{
                     println!("timestamp: {}", timestamp);
                     //if let Some(image_proto) = Self::prepare_image_proto(&resource_name, timestamp, scale_x, scale_y) {
                     if let Some(image_proto) 
-                        = Self::prepare_image_proto_from_imagedata(self.message_provider.clone(), &resource_name, Some(timestamp), scale_x, scale_y) {
-                        items.push(Self::build_streamset(
-                            timestamp,
-                            image_proto
-                        ));
-                    } else {
-                        println!("Fail to send image time:{}", timestamp);
+                        = Self::prepare_image_proto_from_imagedata(&self.message_provider, &resource_name, Some(timestamp), scale_x, scale_y) {
+                        items.push(Self::build_streamset(timestamp,image_proto));
                     }
                 }
                 
-                ws_response_stream!("Image/Image", resource_name.clone(), start_time, end_time, items).send(ctx);
+                ws_response_stream!("Image/Image", &resource_name, start_time, end_time, items).send(ctx);
             }
             Some("Image/StopStreamImage") => {
                 let _ = params["client_id"].as_str().map(|client_id| {
@@ -591,7 +588,7 @@ impl WebsocketResponder for ImageService {
                 }
 
                 let mut timestamps = {
-                    self.message_provider.lock().unwrap().collect_record_timestamps(&resource_name)
+                    self.message_provider.read().unwrap().collect_all_timestamps(&resource_name)
                 };
 
                 timestamps.reverse();
@@ -622,20 +619,15 @@ impl WebsocketResponder for ImageService {
                             let timestamp = if let Some(timestamp) = timestamps.pop() {
                                 timestamp
                             } else {
-                                    break;
+                                break;
                             };                     
 
                             if let Some(image_proto) = 
-                                Self::prepare_image_proto_from_imagedata(message_provider.clone(), &resource_name, Some(timestamp), scale_x, scale_y){
-                                items.push(Self::build_streamset(
-                                    timestamp,
-                                    image_proto
-                                ));
-                            } else {
-                                println!("Fail to send image time:{}", timestamp);
+                                Self::prepare_image_proto_from_imagedata(&message_provider, &resource_name, Some(timestamp), scale_x, scale_y){
+                                items.push(Self::build_streamset(timestamp, image_proto));
                             }
-                            
-                            let response = ws_response_stream!("Image/StreamImage", resource_name.clone(), timestamp, timestamp, items);
+
+                            let response = ws_response_stream!("Image/StreamImage", &resource_name, timestamp, timestamp, items);
                             let _ = recipient.do_send(SendWSResponse { response });            
                         }
                     }
@@ -669,7 +661,7 @@ async fn image_service(req: HttpRequest, stream: web::Payload, state: web::Data<
 
 pub struct AppState {
     pubsub_address: String,
-    message_provider: Arc<Mutex<PubsubMessageProvider>>,
+    message_provider: Arc<RwLock<PubsubMessageProvider>>,
 }
 
 impl AppState {
@@ -685,12 +677,12 @@ impl AppState {
 
         Ok(Self{
             pubsub_address,
-            message_provider: Arc::new(Mutex::new(message_provider)),
+            message_provider: Arc::new(RwLock::new(message_provider)),
         })
     }
 
     pub async fn destroy(&self){
-        self.message_provider.lock().unwrap().close().await;
+        self.message_provider.write().unwrap().close().await;
     }
 }
 

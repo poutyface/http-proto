@@ -1,249 +1,301 @@
 {
   "nested": {
-    "path": {
-      "type": "string",
-      "id": 54200,
-      "extend": "google.protobuf.MessageOptions"
-    },
-    "responseType": {
-      "type": "string",
-      "id": 54201,
-      "extend": "google.protobuf.MessageOptions"
-    },
-    "responseSchema": {
-      "type": "string",
-      "id": 54202,
-      "extend": "google.protobuf.MessageOptions"
-    },
-    "RequestHeader": {
-      "fields": {
+    "viz": {
+      "nested": {
+        "Text": {
+          "fields": {
+            "text": {
+              "type": "string",
+              "id": 1
+            }
+          }
+        },
+        "Image": {
+          "fields": {
+            "data": {
+              "type": "bytes",
+              "id": 1
+            },
+            "mimeType": {
+              "type": "string",
+              "id": 2
+            }
+          }
+        },
+        "Point2d": {
+          "fields": {
+            "x": {
+              "type": "float",
+              "id": 1
+            },
+            "y": {
+              "type": "float",
+              "id": 2
+            }
+          }
+        },
+        "Point3d": {
+          "fields": {
+            "x": {
+              "type": "float",
+              "id": 1
+            },
+            "y": {
+              "type": "float",
+              "id": 2
+            },
+            "z": {
+              "type": "float",
+              "id": 3
+            }
+          }
+        },
         "path": {
           "type": "string",
-          "id": 1
-        }
-      }
-    },
-    "RequestCommandRecord": {
-      "options": {
-        "(path)": "Command/Record"
-      },
-      "fields": {
-        "header": {
-          "type": "RequestHeader",
-          "id": 1
+          "id": 54200,
+          "extend": "google.protobuf.MessageOptions"
         },
-        "enable": {
-          "type": "bool",
-          "id": 2
-        }
-      }
-    },
-    "RequestStatus": {
-      "options": {
-        "(path)": "Status/Status",
-        "(response_type)": "Stream",
-        "(response_schema)": "Status"
-      },
-      "fields": {
-        "header": {
-          "type": "RequestHeader",
-          "id": 1
-        },
-        "startTime": {
-          "type": "uint64",
-          "id": 2
-        },
-        "endTime": {
-          "type": "uint64",
-          "id": 3
-        }
-      }
-    },
-    "RequestStatusLive": {
-      "options": {
-        "(path)": "Status/Live"
-      },
-      "fields": {
-        "header": {
-          "type": "RequestHeader",
-          "id": 1
-        },
-        "enable": {
-          "type": "bool",
-          "id": 2
-        }
-      }
-    },
-    "RequestImage": {
-      "options": {
-        "(path)": "Image/Image",
-        "(response_type)": "Stream",
-        "(response_schema)": "ImageData"
-      },
-      "fields": {
-        "header": {
-          "type": "RequestHeader",
-          "id": 1
-        },
-        "startTime": {
-          "type": "uint64",
-          "id": 2
-        },
-        "endTime": {
-          "type": "uint64",
-          "id": 3
-        },
-        "resource": {
+        "responseType": {
           "type": "string",
-          "id": 4
+          "id": 54201,
+          "extend": "google.protobuf.MessageOptions"
         },
-        "scaleX": {
-          "type": "float",
-          "id": 5
-        },
-        "scaleY": {
-          "type": "float",
-          "id": 6
-        }
-      }
-    },
-    "RequestStreamImage": {
-      "options": {
-        "(path)": "Image/StreamImage",
-        "(response_type)": "Stream",
-        "(response_schema)": "ImageData"
-      },
-      "fields": {
-        "header": {
-          "type": "RequestHeader",
-          "id": 1
-        },
-        "startTime": {
-          "type": "uint64",
-          "id": 2
-        },
-        "resource": {
+        "responseSchema": {
           "type": "string",
-          "id": 3
+          "id": 54202,
+          "extend": "google.protobuf.MessageOptions"
         },
-        "scaleX": {
-          "type": "float",
-          "id": 4
+        "RequestHeader": {
+          "fields": {
+            "path": {
+              "type": "string",
+              "id": 1
+            }
+          }
         },
-        "scaleY": {
-          "type": "float",
-          "id": 5
+        "RequestCommandRecord": {
+          "options": {
+            "(path)": "Command/Record"
+          },
+          "fields": {
+            "header": {
+              "type": "RequestHeader",
+              "id": 1
+            },
+            "enable": {
+              "type": "bool",
+              "id": 2
+            }
+          }
         },
-        "clientId": {
-          "type": "string",
-          "id": 6
-        }
-      }
-    },
-    "RequestStopStreamImage": {
-      "options": {
-        "(path)": "Image/StopStreamImage"
-      },
-      "fields": {
-        "header": {
-          "type": "RequestHeader",
-          "id": 1
+        "RequestStatus": {
+          "options": {
+            "(path)": "Status/Status",
+            "(response_type)": "Stream",
+            "(response_schema)": "Status"
+          },
+          "fields": {
+            "header": {
+              "type": "RequestHeader",
+              "id": 1
+            },
+            "startTime": {
+              "type": "uint64",
+              "id": 2
+            },
+            "endTime": {
+              "type": "uint64",
+              "id": 3
+            }
+          }
         },
-        "clientId": {
-          "type": "string",
-          "id": 2
-        }
-      }
-    },
-    "Status": {
-      "fields": {
-        "text": {
-          "type": "Text",
-          "id": 1
+        "RequestStatusLive": {
+          "options": {
+            "(path)": "Status/Live"
+          },
+          "fields": {
+            "header": {
+              "type": "RequestHeader",
+              "id": 1
+            },
+            "enable": {
+              "type": "bool",
+              "id": 2
+            }
+          }
         },
-        "point3d": {
-          "type": "Point3d",
-          "id": 2
+        "RequestImage": {
+          "options": {
+            "(path)": "Image/Image",
+            "(response_type)": "Stream",
+            "(response_schema)": "ImageData"
+          },
+          "fields": {
+            "header": {
+              "type": "RequestHeader",
+              "id": 1
+            },
+            "startTime": {
+              "type": "uint64",
+              "id": 2
+            },
+            "endTime": {
+              "type": "uint64",
+              "id": 3
+            },
+            "resource": {
+              "type": "string",
+              "id": 4
+            },
+            "scaleX": {
+              "type": "float",
+              "id": 5
+            },
+            "scaleY": {
+              "type": "float",
+              "id": 6
+            }
+          }
         },
-        "point2d": {
-          "type": "Point2d",
-          "id": 3
-        }
-      }
-    },
-    "Stream": {
-      "fields": {
-        "path": {
-          "type": "string",
-          "id": 1
+        "RequestStreamImage": {
+          "options": {
+            "(path)": "Image/StreamImage",
+            "(response_type)": "Stream",
+            "(response_schema)": "ImageData"
+          },
+          "fields": {
+            "header": {
+              "type": "RequestHeader",
+              "id": 1
+            },
+            "startTime": {
+              "type": "uint64",
+              "id": 2
+            },
+            "resource": {
+              "type": "string",
+              "id": 3
+            },
+            "scaleX": {
+              "type": "float",
+              "id": 4
+            },
+            "scaleY": {
+              "type": "float",
+              "id": 5
+            },
+            "clientId": {
+              "type": "string",
+              "id": 6
+            }
+          }
         },
-        "subject": {
-          "type": "string",
-          "id": 2
+        "RequestStopStreamImage": {
+          "options": {
+            "(path)": "Image/StopStreamImage"
+          },
+          "fields": {
+            "header": {
+              "type": "RequestHeader",
+              "id": 1
+            },
+            "clientId": {
+              "type": "string",
+              "id": 2
+            }
+          }
         },
-        "startTime": {
-          "type": "uint64",
-          "id": 3
+        "Status": {
+          "fields": {
+            "text": {
+              "type": "Text",
+              "id": 1
+            },
+            "point3d": {
+              "type": "Point3d",
+              "id": 2
+            },
+            "point2d": {
+              "type": "Point2d",
+              "id": 3
+            }
+          }
         },
-        "endTime": {
-          "type": "uint64",
-          "id": 4
+        "Stream": {
+          "fields": {
+            "path": {
+              "type": "string",
+              "id": 1
+            },
+            "subject": {
+              "type": "string",
+              "id": 2
+            },
+            "startTime": {
+              "type": "uint64",
+              "id": 3
+            },
+            "endTime": {
+              "type": "uint64",
+              "id": 4
+            },
+            "items": {
+              "rule": "repeated",
+              "type": "StreamSet",
+              "id": 5
+            }
+          }
         },
-        "items": {
-          "rule": "repeated",
-          "type": "StreamSet",
-          "id": 5
-        }
-      }
-    },
-    "StreamSet": {
-      "oneofs": {
-        "Schema": {
-          "oneof": [
-            "status",
-            "text",
-            "point2d",
-            "point3d",
-            "image"
-          ]
-        }
-      },
-      "fields": {
-        "timestamp": {
-          "type": "uint64",
-          "id": 1
+        "StreamSet": {
+          "oneofs": {
+            "Schema": {
+              "oneof": [
+                "status",
+                "text",
+                "point2d",
+                "point3d",
+                "image"
+              ]
+            }
+          },
+          "fields": {
+            "timestamp": {
+              "type": "uint64",
+              "id": 1
+            },
+            "status": {
+              "type": "Status",
+              "id": 2
+            },
+            "text": {
+              "type": "Text",
+              "id": 3
+            },
+            "point2d": {
+              "type": "Point2d",
+              "id": 4
+            },
+            "point3d": {
+              "type": "Point3d",
+              "id": 5
+            },
+            "image": {
+              "type": "Image",
+              "id": 6
+            }
+          }
         },
-        "status": {
-          "type": "Status",
-          "id": 2
-        },
-        "text": {
-          "type": "Text",
-          "id": 3
-        },
-        "point2d": {
-          "type": "Point2d",
-          "id": 4
-        },
-        "point3d": {
-          "type": "Point3d",
-          "id": 5
-        },
-        "image": {
-          "type": "Image",
-          "id": 6
-        }
-      }
-    },
-    "WSResponse": {
-      "fields": {
-        "path": {
-          "type": "string",
-          "id": 1
-        },
-        "data": {
-          "type": "google.protobuf.Any",
-          "id": 2
+        "WSResponse": {
+          "fields": {
+            "path": {
+              "type": "string",
+              "id": 1
+            },
+            "data": {
+              "type": "google.protobuf.Any",
+              "id": 2
+            }
+          }
         }
       }
     },
@@ -1157,54 +1209,6 @@
               }
             }
           }
-        }
-      }
-    },
-    "Text": {
-      "fields": {
-        "text": {
-          "type": "string",
-          "id": 1
-        }
-      }
-    },
-    "Image": {
-      "fields": {
-        "data": {
-          "type": "bytes",
-          "id": 1
-        },
-        "mimeType": {
-          "type": "string",
-          "id": 2
-        }
-      }
-    },
-    "Point2d": {
-      "fields": {
-        "x": {
-          "type": "float",
-          "id": 1
-        },
-        "y": {
-          "type": "float",
-          "id": 2
-        }
-      }
-    },
-    "Point3d": {
-      "fields": {
-        "x": {
-          "type": "float",
-          "id": 1
-        },
-        "y": {
-          "type": "float",
-          "id": 2
-        },
-        "z": {
-          "type": "float",
-          "id": 3
         }
       }
     }

@@ -1,12 +1,9 @@
 syntax = "proto3";
 
+package viz;
+
 import "google/protobuf/descriptor.proto";
-import "google/protobuf/any.proto";
-//import "image.proto";
 
-import "primitives.proto";
-
-// Request
 extend google.protobuf.MessageOptions {
     string path = 54200;
     string response_type = 54201;
@@ -17,7 +14,6 @@ extend google.protobuf.MessageOptions {
 message RequestHeader {
     string path = 1;
 }
-
 
 message RequestCommandRecord {
     option (path) = "Command/Record";
@@ -33,15 +29,6 @@ message RequestStatus {
     uint64 start_time = 2;
     uint64 end_time = 3;
 }
-
-/*
-// [deprecated]
-message RequestStatusRecord {
-    option (path) = "Status/Record";
-    RequestHeader header = 1;
-    bool enable = 2;
-}
-*/
 
 message RequestStatusLive {
     option (path) = "Status/Live";
@@ -78,38 +65,3 @@ message RequestStopStreamImage {
     RequestHeader header = 1;
     string client_id = 2;
 }
-
-
-message Status {
-    Text text = 1;
-    Point3d point3d = 2;
-    Point2d point2d = 3;
-}
-
-
-message Stream {
-    string path = 1;
-    string subject = 2;
-    uint64 start_time = 3;
-    uint64 end_time = 4;
-    repeated StreamSet items = 5;
-}
-
-message StreamSet {
-    uint64 timestamp = 1;
-    oneof Schema {
-        Status status = 2;
-        Text text = 3;
-        Point2d point2d = 4;
-        Point3d point3d = 5;
-        Image image = 6;
-    }
-}
-
-
-message WSResponse {
-    string path = 1;
-    // Stream, ...
-    google.protobuf.Any data = 2;
-}
-

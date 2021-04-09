@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
             # image
             image = cv2.imread("../../backend/assets/test_images/{}.jpg".format(i))
-            result, enc_image = cv2.imencode('.jpg', image)
+            result, enc_image = cv2.imencode('.jpg', image, [cv2.IMWRITE_JPEG_QUALITY, 70])
             if result == False:
                 print('could not encode image')
                 exit(1)
